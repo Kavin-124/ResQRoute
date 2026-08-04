@@ -27,7 +27,7 @@ const MapEngine = (function () {
     map = L.map(containerId, {
       zoomControl: true,
       attributionControl: false
-    }).setView(defaultCenter, 8);
+    }).setView(defaultCenter, 7.5);
 
     activeTileLayer = L.tileLayer(tileLayers.radar, {
       maxZoom: 19,
@@ -77,7 +77,7 @@ const MapEngine = (function () {
       <div style="color:#0f172a; font-family:sans-serif; font-weight:bold;">
         <h4>${label}</h4>
         <p style="margin:4px 0 0 0; font-size:0.8rem; color:#475569;">
-          ${type === 'active' ? '🚨 Main Emergency Transport (TN-01-AX-1080)' : '🛡️ Synchronized Convoy Escort (TN-07-PA-4421)'}
+          ${type === 'active' ? '🚨 Main Emergency Transport (TN-01-AX-1080)' : '🛡️ Convoy Patrol Escort (TN-07-PA-4421)'}
         </p>
       </div>
     `);
@@ -110,8 +110,11 @@ const MapEngine = (function () {
   }
 
   function drawSegmentedTrafficRoute(waypoints, segments) {
+    // Clear previous polylines
     polylineSegments.forEach(layer => map.removeLayer(layer));
     polylineSegments = [];
+
+    if (!waypoints || waypoints.length === 0) return;
 
     if (!segments || segments.length === 0) {
       const line = L.polyline(waypoints, { color: '#00e676', weight: 6, opacity: 0.9 }).addTo(map);

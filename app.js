@@ -1,7 +1,6 @@
 /* ==========================================================================
-   ResQRoute Main Application Controller
-   Supports All 38 Districts of Tamil Nadu, Satellite Map Toggle,
-   Color-Differentiated Live Traffic, and Dynamic Rerouting Engine.
+   ResQRoute Main Application Controller (No Default Route Edition)
+   Routes are calculated and drawn ONLY when user selects Origin & Destination.
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -66,12 +65,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const toggleSoundBtn = document.getElementById('toggleSoundBtn');
   const soundStatus = document.getElementById('soundStatus');
-  toggleSoundBtn.addEventListener('click', () => {
-    isSoundEnabled = !isSoundEnabled;
-    soundStatus.textContent = isSoundEnabled ? 'Audio ON' : 'Audio OFF';
-    toggleSoundBtn.querySelector('i').className = isSoundEnabled ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark';
-    if (!isSoundEnabled) toggleSirenSound(false);
-  });
+  if (toggleSoundBtn && soundStatus) {
+    toggleSoundBtn.addEventListener('click', () => {
+      isSoundEnabled = !isSoundEnabled;
+      soundStatus.textContent = isSoundEnabled ? 'Audio ON' : 'Audio OFF';
+      toggleSoundBtn.querySelector('i').className = isSoundEnabled ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark';
+      if (!isSoundEnabled) toggleSirenSound(false);
+    });
+  }
 
   setInterval(() => {
     const now = new Date();
@@ -100,13 +101,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const primaryAmb = SimulationEngine.primaryAmbulance;
   const peerAmbs = SimulationEngine.peerAmbulances;
 
-  let hospMarker = MapEngine.addHospitalMarker('hosp-1', 11.0420, 77.0380, primaryAmb.destination);
   MapEngine.addAmbulanceMarker(primaryAmb.id, primaryAmb.lat, primaryAmb.lng, 'active', `${primaryAmb.id} (Main Transport)`);
   peerAmbs.forEach(peer => {
     MapEngine.addAmbulanceMarker(peer.id, peer.lat, peer.lng, 'peer', `${peer.id} (${peer.driver.split(' ')[1]})`);
   });
 
-  MapEngine.drawSegmentedTrafficRoute(SimulationEngine.activeWaypoints, SimulationEngine.activeTrafficSegments);
+  // DO NOT DRAW DEFAULT ROUTE ON STARTUP
 
   const roleBtns = document.querySelectorAll('.role-btn');
   const rolePanels = document.querySelectorAll('.role-panel');
@@ -138,23 +138,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const allDistricts = Object.keys(SimulationEngine.districtCenters).sort();
 
     if (originDistrictSelect) {
-      originDistrictSelect.innerHTML = '';
+      originDistrictSelect.innerHTML = '<option value="">-- Select Origin District --</option>';
       allDistricts.forEach(dist => {
         const opt = document.createElement('option');
         opt.value = dist;
         opt.textContent = dist;
-        if (dist === 'Karur') opt.selected = true;
         originDistrictSelect.appendChild(opt);
       });
     }
 
     if (targetDistrictSelect) {
-      targetDistrictSelect.innerHTML = '';
+      targetDistrictSelect.innerHTML = '<option value="">-- Select Destination District --</option>';
       allDistricts.forEach(dist => {
         const opt = document.createElement('option');
         opt.value = dist;
         opt.textContent = `${dist} District`;
-        if (dist === 'Coimbatore') opt.selected = true;
         targetDistrictSelect.appendChild(opt);
       });
     }
@@ -165,7 +163,10 @@ document.addEventListener('DOMContentLoaded', () => {
   function populateHospitalsForDistrict(rawDistrict) {
     if (!hospitalPresetSelect) return;
     const district = SimulationEngine.cleanDistrictName(rawDistrict);
-    hospitalPresetSelect.innerHTML = '';
+    hospitalPresetSelect.innerHTML = '<option value="">-- Select Hospital --</option>';
+
+    if (!district) return;
+
     const hospitals = SimulationEngine.districtHospitals[district] || [
       { name: `Government Head Quarters Hospital, ${district}`, lat: 10.8, lng: 78.6 }
     ];
@@ -184,8 +185,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (targetDistrictSelect) {
-    populateHospitalsForDistrict(targetDistrictSelect.value);
-
     targetDistrictSelect.addEventListener('change', () => {
       populateHospitalsForDistrict(targetDistrictSelect.value);
     });
@@ -207,6 +206,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const targetDistrict = SimulationEngine.cleanDistrictName(targetDistrictSelect.value);
       let chosenHospital = hospitalPresetSelect.value;
 
+      if (!origin || !targetDistrict) {
+        alert("Please select both Origin District and Destination District!");
+        return;
+      }
+
       if (chosenHospital === 'CUSTOM') {
         chosenHospital = customHospInput.value.trim() || `Govt Hospital, ${targetDistrict}`;
       }
@@ -214,9 +218,9 @@ document.addEventListener('DOMContentLoaded', () => {
       SimulationEngine.setInterDistrictRoute(origin, targetDistrict, chosenHospital);
 
       document.getElementById('routeBannerText').innerHTML = `Route: <strong>${origin} ➔ ${targetDistrict}</strong>`;
-      document.getElementById('destHospitalName').textContent = chosenHospital;
+      document.getElementById('destHospitalName').textContent = chosenHospital || 'Trauma Center';
       document.getElementById('peerRouteText').textContent = `${origin} ➔ ${targetDistrict}`;
-      document.getElementById('peerTargetHospText').textContent = chosenHospital;
+      document.getElementById('peerTargetHospText').textContent = chosenHospital || 'Trauma Center';
 
       renderIncomingList();
 
@@ -225,18 +229,17 @@ document.addEventListener('DOMContentLoaded', () => {
       const targetLat = matchedHosp ? matchedHosp.lat : SimulationEngine.activeWaypoints[SimulationEngine.activeWaypoints.length - 1][0];
       const targetLng = matchedHosp ? matchedHosp.lng : SimulationEngine.activeWaypoints[SimulationEngine.activeWaypoints.length - 1][1];
 
-      // Instantly relocate markers to new origin & destination
       MapEngine.updateAmbulancePos(primaryAmb.id, primaryAmb.lat, primaryAmb.lng);
       peerAmbs.forEach(peer => {
         MapEngine.updateAmbulancePos(peer.id, peer.lat, peer.lng);
       });
 
-      MapEngine.addHospitalMarker('hosp-1', targetLat, targetLng, chosenHospital);
+      MapEngine.addHospitalMarker('hosp-1', targetLat, targetLng, chosenHospital || `Emergency Hospital, ${targetDistrict}`);
       MapEngine.drawSegmentedTrafficRoute(SimulationEngine.activeWaypoints, SimulationEngine.activeTrafficSegments);
 
       playAlertChime();
-      document.getElementById('tickerText').textContent = `📍 ROUTE RECALCULATED: ${origin} to ${targetDistrict} (${SimulationEngine.primaryAmbulance.distanceRemaining} km). Hospital: "${chosenHospital}". Live GPS overlay updated!`;
-      alert(`📍 Emergency Route Recalculated for ${origin} ➔ ${targetDistrict}!\n\nDistance: ${SimulationEngine.primaryAmbulance.distanceRemaining} km\nTarget Hospital: ${chosenHospital}\n\nBroadcasted to Lead Convoy Escort TN-07-PA-4421 & Hospital ER!`);
+      document.getElementById('tickerText').textContent = `📍 EMERGENCY ROUTE CALCULATED: ${origin} to ${targetDistrict} (${SimulationEngine.primaryAmbulance.distanceRemaining} km). Hospital: "${chosenHospital}". Live GPS active!`;
+      alert(`📍 Emergency Route Calculated for ${origin} ➔ ${targetDistrict}!\n\nDistance: ${SimulationEngine.primaryAmbulance.distanceRemaining} km\nTarget Hospital: ${chosenHospital}\n\nBroadcasted to Lead Convoy Escort TN-07-PA-4421 & Hospital ER!`);
     });
   }
 
@@ -271,11 +274,11 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="incoming-card">
         <div class="incoming-header">
           <span><i class="fa-solid fa-truck-medical" style="color:#ff3b30"></i> Reg No: ${primaryAmb.id}</span>
-          <span style="color:#00b0ff" id="erEtaDisplay">${Math.floor(primaryAmb.etaSeconds / 60)}m ${primaryAmb.etaSeconds % 60}s</span>
+          <span style="color:#00b0ff" id="erEtaDisplay">${primaryAmb.etaSeconds > 0 ? Math.floor(primaryAmb.etaSeconds / 60) + 'm' : 'Standby'}</span>
         </div>
         <div class="incoming-vitals">
-          <span>Route: <strong>${primaryAmb.origin} ➔ ${primaryAmb.targetDistrict}</strong></span>
-          <span>Target ER: <strong>${primaryAmb.destination}</strong></span>
+          <span>Route: <strong>${primaryAmb.origin || '---'} ➔ ${primaryAmb.targetDistrict || '---'}</strong></span>
+          <span>Target ER: <strong>${primaryAmb.destination || '---'}</strong></span>
         </div>
       </div>
     `;
@@ -289,7 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
       toggleSirenSound(true);
       playAlertChime();
 
-      document.getElementById('tickerText').textContent = `🚨 CODE RED ACTIVE! Main Ambulance TN-01-AX-1080 & Convoy Escort TN-07-PA-4421 in Lead Convoy on ${primaryAmb.origin} ➔ ${primaryAmb.targetDistrict} Highway.`;
+      document.getElementById('tickerText').textContent = `🚨 CODE RED ACTIVE! Main Ambulance TN-01-AX-1080 & Convoy Escort TN-07-PA-4421 in Lead Convoy.`;
       renderPeerList();
     });
   }
@@ -334,33 +337,44 @@ document.addEventListener('DOMContentLoaded', () => {
   function startLiveSimulation() {
     SimulationEngine.start({
       onTick: (data) => {
-        MapEngine.updateAmbulancePos(data.ambulance.id, data.ambulance.lat, data.ambulance.lng);
-        
-        data.peers.forEach(peer => {
-          MapEngine.updateAmbulancePos(peer.id, peer.lat, peer.lng);
-        });
+        if (data.ambulance.origin && data.ambulance.targetDistrict && data.ambulance.origin !== 'Select Origin') {
+          MapEngine.updateAmbulancePos(data.ambulance.id, data.ambulance.lat, data.ambulance.lng);
+          
+          data.peers.forEach(peer => {
+            MapEngine.updateAmbulancePos(peer.id, peer.lat, peer.lng);
+          });
 
-        const gpsDisplay = document.getElementById('liveGpsCoords');
-        if (gpsDisplay) {
-          gpsDisplay.textContent = `${data.ambulance.lat.toFixed(4)}° N, ${data.ambulance.lng.toFixed(4)}° E`;
+          const gpsDisplay = document.getElementById('liveGpsCoords');
+          if (gpsDisplay) {
+            gpsDisplay.textContent = `${data.ambulance.lat.toFixed(4)}° N, ${data.ambulance.lng.toFixed(4)}° E`;
+          }
+
+          const speedEl = document.getElementById('currentSpeed');
+          if (speedEl) speedEl.textContent = `${data.ambulance.speed} km/h`;
+
+          const distEl = document.getElementById('distRemaining');
+          if (distEl) distEl.textContent = `${data.ambulance.distanceRemaining} km`;
+          
+          const mins = Math.floor(data.ambulance.etaSeconds / 60);
+          const hrs = Math.floor(mins / 60);
+          const remMins = mins % 60;
+          const etaFormatted = hrs > 0 ? `${hrs}h ${remMins}m` : `${mins}m ${data.ambulance.etaSeconds % 60}s`;
+
+          const etaEl = document.getElementById('etaMinutes');
+          if (etaEl) etaEl.textContent = etaFormatted;
+          
+          const erEtaDisplay = document.getElementById('erEtaDisplay');
+          if (erEtaDisplay) erEtaDisplay.textContent = etaFormatted;
+        } else {
+          const speedEl = document.getElementById('currentSpeed');
+          if (speedEl) speedEl.textContent = `0 km/h`;
+
+          const distEl = document.getElementById('distRemaining');
+          if (distEl) distEl.textContent = `--- km`;
+
+          const etaEl = document.getElementById('etaMinutes');
+          if (etaEl) etaEl.textContent = `---`;
         }
-
-        const speedEl = document.getElementById('currentSpeed');
-        if (speedEl) speedEl.textContent = `${data.ambulance.speed} km/h`;
-
-        const distEl = document.getElementById('distRemaining');
-        if (distEl) distEl.textContent = `${data.ambulance.distanceRemaining} km`;
-        
-        const mins = Math.floor(data.ambulance.etaSeconds / 60);
-        const hrs = Math.floor(mins / 60);
-        const remMins = mins % 60;
-        const etaFormatted = hrs > 0 ? `${hrs}h ${remMins}m` : `${mins}m ${data.ambulance.etaSeconds % 60}s`;
-
-        const etaEl = document.getElementById('etaMinutes');
-        if (etaEl) etaEl.textContent = etaFormatted;
-        
-        const erEtaDisplay = document.getElementById('erEtaDisplay');
-        if (erEtaDisplay) erEtaDisplay.textContent = etaFormatted;
 
         const erBpm = document.getElementById('erBpm');
         if (erBpm) erBpm.textContent = data.ambulance.vitals.bpm;
@@ -398,7 +412,7 @@ document.addEventListener('DOMContentLoaded', () => {
     simTrafficJamBtn.addEventListener('click', () => {
       MapEngine.addTrafficJamCircle(11.9400, 79.4860);
       playAlertChime();
-      document.getElementById('tickerText').textContent = `⚠️ Heavy highway congestion reported on ${primaryAmb.origin} ➔ ${primaryAmb.targetDistrict} route! Convoy Escort clearing path.`;
+      document.getElementById('tickerText').textContent = `⚠️ Heavy highway congestion reported! Convoy Escort clearing path.`;
     });
   }
 

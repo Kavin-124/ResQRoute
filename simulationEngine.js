@@ -1,7 +1,7 @@
 /* ==========================================================================
-   ResQRoute High-Resolution Dynamic Engine (38 Tamil Nadu Districts Edition)
-   Dynamically generates GPS routes, intermediate waypoints, accurate distances,
-   and live traffic colors for ANY pair among all 38 Tamil Nadu districts.
+   ResQRoute High-Resolution Dynamic Engine (No Default Route Edition)
+   No default route is loaded on startup. Routes are calculated and drawn
+   ONLY when the user explicitly selects Origin, Destination & Hospital.
    ========================================================================== */
 
 const SimulationEngine = (function () {
@@ -11,7 +11,7 @@ const SimulationEngine = (function () {
   let animProgress = 0;
 
   function cleanDistrictName(name) {
-    if (!name) return "Chennai";
+    if (!name) return "";
     return name.replace(/\s+District$/i, "").trim();
   }
 
@@ -186,7 +186,6 @@ const SimulationEngine = (function () {
     ]
   };
 
-  // Haversine Distance Calculator (km)
   function calculateDistance(lat1, lon1, lat2, lon2) {
     const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -198,13 +197,16 @@ const SimulationEngine = (function () {
     return Math.round(R * c * 1.2 * 10) / 10;
   }
 
-  // Dynamic Waypoint & Traffic Segment Generator for ANY 38-District Pair
   function generateDynamicRoute(rawOrigin, rawDest) {
     const originName = cleanDistrictName(rawOrigin);
     const destName = cleanDistrictName(rawDest);
 
-    const startCoord = districtCenters[originName] || [13.0815, 80.2770];
-    const endCoord = districtCenters[destName] || [10.9601, 78.0766];
+    if (!originName || !destName || !districtCenters[originName] || !districtCenters[destName]) {
+      return { distanceKm: 0, estMinutes: 0, waypoints: [], trafficSegments: [] };
+    }
+
+    const startCoord = districtCenters[originName];
+    const endCoord = districtCenters[destName];
 
     const distKm = calculateDistance(startCoord[0], startCoord[1], endCoord[0], endCoord[1]);
     const numWaypoints = 6;
@@ -212,15 +214,15 @@ const SimulationEngine = (function () {
 
     for (let i = 0; i <= numWaypoints; i++) {
       const ratio = i / numWaypoints;
-      const curveLat = Math.sin(ratio * Math.PI) * (ratio % 2 === 0 ? 0.04 : -0.04);
-      const curveLng = Math.sin(ratio * Math.PI) * (ratio % 2 === 0 ? -0.03 : 0.03);
+      const curveLat = Math.sin(ratio * Math.PI) * (i % 2 === 0 ? 0.03 : -0.03);
+      const curveLng = Math.sin(ratio * Math.PI) * (i % 2 === 0 ? -0.02 : 0.02);
 
       const lat = startCoord[0] + (endCoord[0] - startCoord[0]) * ratio + curveLat;
       const lng = startCoord[1] + (endCoord[1] - startCoord[1]) * ratio + curveLng;
       waypoints.push([Math.round(lat * 10000) / 10000, Math.round(lng * 10000) / 10000]);
     }
 
-    const estMins = Math.max(10, Math.round((distKm / 75) * 60));
+    const estMins = Math.max(5, Math.round((distKm / 75) * 60));
 
     const trafficSegments = [
       { fromIdx: 0, toIdx: 2, status: 'red', label: `${originName} Exit Congestion (20 km/h)`, color: '#ff3b30' },
@@ -236,45 +238,35 @@ const SimulationEngine = (function () {
     };
   }
 
-  let activeRouteData = generateDynamicRoute("Karur", "Coimbatore");
-  let activeWaypoints = activeRouteData.waypoints;
-  let activeTrafficSegments = activeRouteData.trafficSegments;
+  // NO DEFAULT ROUTE LOADED INITIALLY
+  let activeRouteData = { distanceKm: 0, estMinutes: 0, waypoints: [], trafficSegments: [] };
+  let activeWaypoints = [];
+  let activeTrafficSegments = [];
 
-  // Primary Emergency Ambulance (TN-01-AX-1080)
   const primaryAmbulance = {
     id: 'TN-01-AX-1080',
     driver: 'Capt. Selvam M (TN 108 EMS)',
-    status: 'CODE RED EMERGENCY',
+    status: 'STANDBY PATROL',
     severity: 'CRITICAL',
-    origin: 'Karur',
-    targetDistrict: 'Coimbatore',
-    lat: activeWaypoints[0][0],
-    lng: activeWaypoints[0][1],
-    speed: 68,
-    vitals: { bpm: 134, spo2: 91, bp: '145/95' },
-    destination: 'KMCH Speciality Hospital, Avinashi Rd, Coimbatore',
-    distanceRemaining: activeRouteData.distanceKm,
-    etaSeconds: activeRouteData.estMinutes * 60
+    origin: 'Select Origin',
+    targetDistrict: 'Select Destination',
+    lat: 11.1271,
+    lng: 78.6569,
+    speed: 0,
+    vitals: { bpm: 98, spo2: 98, bp: '120/80' },
+    destination: 'Select Hospital',
+    distanceRemaining: 0,
+    etaSeconds: 0
   };
 
-  // Peer Patrol Ambulances
   const peerAmbulances = [
     {
       id: 'TN-07-PA-4421',
       driver: 'Officer Karthik R (TN Escort)',
-      status: 'HIGHWAY CONVOY ESCORT',
-      lat: activeWaypoints[0][0] + 0.002,
-      lng: activeWaypoints[0][1] + 0.002,
-      distFromPrimary: 0.08,
-      isLeadEscort: true
-    },
-    {
-      id: 'TN-09-EM-8833',
-      driver: 'Officer Anitha S',
-      status: 'PATROL BEACON',
-      lat: activeWaypoints[Math.floor(activeWaypoints.length / 2)][0],
-      lng: activeWaypoints[Math.floor(activeWaypoints.length / 2)][1],
-      distFromPrimary: 2.5,
+      status: 'PATROL READY',
+      lat: 11.1300,
+      lng: 78.6600,
+      distFromPrimary: 0,
       isLeadEscort: false
     }
   ];
@@ -292,6 +284,7 @@ const SimulationEngine = (function () {
 
     primaryAmbulance.origin = origin;
     primaryAmbulance.targetDistrict = targetDistrict;
+    primaryAmbulance.status = 'CODE RED EMERGENCY';
     if (hospitalName) primaryAmbulance.destination = hospitalName;
 
     activeRouteData = generateDynamicRoute(origin, targetDistrict);
@@ -301,13 +294,17 @@ const SimulationEngine = (function () {
     currentStep = 0;
     animProgress = 0;
 
-    primaryAmbulance.lat = activeWaypoints[0][0];
-    primaryAmbulance.lng = activeWaypoints[0][1];
+    if (activeWaypoints.length > 0) {
+      primaryAmbulance.lat = activeWaypoints[0][0];
+      primaryAmbulance.lng = activeWaypoints[0][1];
+      peerAmbulances[0].lat = activeWaypoints[0][0] + 0.002;
+      peerAmbulances[0].lng = activeWaypoints[0][1] + 0.002;
+      peerAmbulances[0].isLeadEscort = true;
+      peerAmbulances[0].status = 'HIGHWAY CONVOY ESCORT';
+    }
+
     primaryAmbulance.distanceRemaining = activeRouteData.distanceKm;
     primaryAmbulance.etaSeconds = activeRouteData.estMinutes * 60;
-
-    peerAmbulances[0].lat = activeWaypoints[0][0] + 0.002;
-    peerAmbulances[0].lng = activeWaypoints[0][1] + 0.002;
 
     if (listeners.onRouteChange) {
       listeners.onRouteChange({
@@ -337,6 +334,7 @@ const SimulationEngine = (function () {
 
   function tick() {
     if (!isRunning) return;
+    if (activeWaypoints.length < 2) return; // Do not animate if no route is calculated!
 
     animProgress += 0.025;
 
@@ -378,7 +376,6 @@ const SimulationEngine = (function () {
         const lp2 = activeWaypoints[Math.min(leadStep + 1, activeWaypoints.length - 1)];
         peer.lat = Math.round((lp1[0] + (lp2[0] - lp1[0]) * leadProgress) * 10000) / 10000;
         peer.lng = Math.round((lp1[1] + (lp2[1] - lp1[1]) * leadProgress) * 10000) / 10000;
-        peer.distFromPrimary = 0.08;
       }
     });
 

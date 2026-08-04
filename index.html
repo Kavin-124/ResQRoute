@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   
   <!-- Main CSS with Cache-Buster -->
-  <link rel="stylesheet" href="styles.css?v=3.0" />
+  <link rel="stylesheet" href="styles.css?v=4.0" />
 </head>
 <body class="theme-dark">
 
@@ -25,13 +25,13 @@
   <div class="ticker-bar" id="tickerBar">
     <div class="ticker-content">
       <span class="ticker-badge pulse-red"><i class="fa-solid fa-map-location-dot"></i> ALL 38 TAMIL NADU DISTRICTS ACTIVE</span>
-      <span id="tickerText">Chennai to Karur Highway Corridor (385.4 km). Color-Differentiated Live Traffic & Satellite View Synchronized.</span>
+      <span id="tickerText">Select Origin & Destination District to calculate emergency route & view live traffic colors across Tamil Nadu.</span>
     </div>
     <div class="ticker-actions">
       <button class="btn-audio" id="toggleSoundBtn" title="Toggle Emergency Siren Sounds">
         <i class="fa-solid fa-volume-high"></i> <span id="soundStatus">Audio ON</span>
       </button>
-      <span class="time-display" id="currentTime">14:20:00</span>
+      <span class="time-display" id="currentTime">14:46:00</span>
     </div>
   </div>
 
@@ -79,7 +79,7 @@
         <div class="panel-card emergency-card">
           <div class="card-header">
             <h3><i class="fa-solid fa-truck-medical"></i> Reg No: TN-01-AX-1080</h3>
-            <span class="status-pill status-code-red" id="ambStatusPill">CODE RED EMERGENCY</span>
+            <span class="status-pill status-available" id="ambStatusPill">PATROL STANDBY</span>
           </div>
 
           <!-- SOS Big Button -->
@@ -94,7 +94,7 @@
           <!-- Live Route Header Banner -->
           <div class="route-banner" id="routeBanner">
             <i class="fa-solid fa-route" style="color:#00b0ff;"></i>
-            <span id="routeBannerText">Route: <strong>Chennai ➔ Karur (NH44/NH38)</strong></span>
+            <span id="routeBannerText">Select Origin & Destination District to Calculate Emergency Route</span>
           </div>
 
           <!-- LIVE AMBULANCE GPS COORDINATE TELEMATICS BOX -->
@@ -102,7 +102,7 @@
             <i class="fa-solid fa-location-crosshairs pulse-blue"></i>
             <div>
               <span class="gps-label">LIVE AMBULANCE GPS POSITION</span>
-              <div class="gps-coords" id="liveGpsCoords">13.0815° N, 80.2770° E</div>
+              <div class="gps-coords" id="liveGpsCoords">11.1271° N, 78.6569° E</div>
             </div>
           </div>
 
@@ -110,19 +110,19 @@
           <div class="telemetry-grid mt-8">
             <div class="stat-box">
               <span class="stat-label">Target Hospital</span>
-              <span class="stat-value highlight-blue" id="destHospitalName">GMCH Karur ER</span>
+              <span class="stat-value highlight-blue" id="destHospitalName">Select Hospital</span>
             </div>
             <div class="stat-box">
               <span class="stat-label">Live Speed</span>
-              <span class="stat-value" id="currentSpeed">68 km/h</span>
+              <span class="stat-value" id="currentSpeed">0 km/h</span>
             </div>
             <div class="stat-box">
               <span class="stat-label">Highway Distance</span>
-              <span class="stat-value" id="distRemaining">385.4 km</span>
+              <span class="stat-value" id="distRemaining">--- km</span>
             </div>
             <div class="stat-box">
               <span class="stat-label">Est. Time (ETA)</span>
-              <span class="stat-value highlight-red" id="etaMinutes">5h 15m</span>
+              <span class="stat-value highlight-red" id="etaMinutes">---</span>
             </div>
           </div>
         </div>
@@ -153,17 +153,17 @@
             <div class="form-group mt-6">
               <label><i class="fa-solid fa-hospital"></i> Hospitals in Selected District</label>
               <select class="hospital-select" id="hospitalPresetSelect">
-                <!-- Dynamically populated based on District -->
+                <option value="">-- Select Hospital --</option>
               </select>
             </div>
 
             <div class="form-group" id="customHospGroup" style="display:none;">
               <label>Custom Hospital / Address</label>
-              <input type="text" class="hosp-input" id="customHospInput" placeholder="e.g. Govt Hospital, Main Rd, Karur">
+              <input type="text" class="hosp-input" id="customHospInput" placeholder="e.g. Govt Hospital, Main Rd">
             </div>
 
             <button class="btn-success full-width mt-8" id="deliverHospBtn">
-              <i class="fa-solid fa-paper-plane"></i> Calculate Route & Reroute Real-Time
+              <i class="fa-solid fa-paper-plane"></i> Calculate Route & Deliver On-The-Spot
             </button>
           </div>
         </div>
@@ -186,17 +186,17 @@
               <div class="vital-item">
                 <i class="fa-solid fa-heart beat-icon"></i>
                 <span class="vital-name">BPM</span>
-                <span class="vital-val" id="vitalHeartRate">134</span>
+                <span class="vital-val" id="vitalHeartRate">98</span>
               </div>
               <div class="vital-item">
                 <i class="fa-solid fa-wind"></i>
                 <span class="vital-name">SpO2</span>
-                <span class="vital-val" id="vitalSpo2">91%</span>
+                <span class="vital-val" id="vitalSpo2">98%</span>
               </div>
               <div class="vital-item">
                 <i class="fa-solid fa-gauge"></i>
                 <span class="vital-name">BP</span>
-                <span class="vital-val" id="vitalBp">145/95</span>
+                <span class="vital-val" id="vitalBp">120/80</span>
               </div>
             </div>
             <button class="btn-primary full-width mt-10" id="updateVitalsBtn">
@@ -209,7 +209,7 @@
         <div class="panel-card">
           <div class="card-header">
             <h3><i class="fa-solid fa-radar"></i> Highway Peer Escort Radar</h3>
-            <span class="badge-mini" id="peerCount">Convoy Traveling Together</span>
+            <span class="badge-mini" id="peerCount">Standby Ready</span>
           </div>
           <div class="peer-list" id="peerListActive">
             <!-- Dynamic Peer Items injected via JS -->
@@ -222,9 +222,9 @@
         <div class="panel-card alert-highlight-card">
           <div class="card-header">
             <h3><i class="fa-solid fa-shield-halved"></i> Reg No: TN-07-PA-4421</h3>
-            <span class="status-pill status-available">HIGHWAY CONVOY ACTIVE</span>
+            <span class="status-pill status-available">PATROL READY</span>
           </div>
-          <p class="section-desc">You are traveling in lock-step directly ahead of main ambulance <strong>TN-01-AX-1080</strong> clearing highway traffic on the Chennai ➔ Karur Corridor.</p>
+          <p class="section-desc">Standing by to join lead convoy escort once main ambulance initiates Code Red Emergency route.</p>
 
           <!-- Peer Alert Request Banner -->
           <div class="peer-request-box" id="peerRequestBox">
@@ -232,7 +232,7 @@
               <i class="fa-solid fa-triangle-exclamation pulse-orange"></i>
               <h4>TN HIGHWAY A2A CONVOY ESCORT ALERT</h4>
             </div>
-            <p>Main Ambulance <strong>TN-01-AX-1080</strong> is traveling on route <strong id="peerRouteText">Chennai ➔ Karur</strong> towards <span id="peerTargetHospText">GMCH Karur ER</span>. Join as Lead Highway Convoy Escort!</p>
+            <p>Main Ambulance <strong>TN-01-AX-1080</strong> route: <strong id="peerRouteText">Select Origin & Destination</strong> towards <span id="peerTargetHospText">Select Hospital</span>.</p>
             <div class="action-buttons">
               <button class="btn-success" id="acceptPatrolBtn">
                 <i class="fa-solid fa-shield-cat"></i> Join Highway Convoy
@@ -245,7 +245,7 @@
             <div class="status-icon"><i class="fa-solid fa-car-side"></i></div>
             <div class="status-info">
               <h4>HIGHWAY CONVOY ESCORT ACTIVE</h4>
-              <p>TN-07-PA-4421 traveling 80m directly ahead of TN-01-AX-1080 on NH44 Corridor.</p>
+              <p>TN-07-PA-4421 traveling 80m directly ahead of TN-01-AX-1080.</p>
             </div>
           </div>
         </div>
@@ -281,7 +281,7 @@
           </div>
           <div class="metrics-grid">
             <div class="metric-card">
-              <span class="metric-num highlight-red">1</span>
+              <span class="metric-num highlight-red">0</span>
               <span class="metric-label">Active Highway Run</span>
             </div>
             <div class="metric-card">
@@ -293,8 +293,8 @@
               <span class="metric-label">Highway Time Saved</span>
             </div>
             <div class="metric-card">
-              <span class="metric-num highlight-orange">385 km</span>
-              <span class="metric-label">Total Route Span</span>
+              <span class="metric-num highlight-orange">38 TN</span>
+              <span class="metric-label">Districts Covered</span>
             </div>
           </div>
         </div>
@@ -342,8 +342,8 @@
 
   <!-- Application Scripts with Cache-Busting -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="mapEngine.js?v=3.0"></script>
-  <script src="simulationEngine.js?v=3.0"></script>
-  <script src="app.js?v=3.0"></script>
+  <script src="mapEngine.js?v=4.0"></script>
+  <script src="simulationEngine.js?v=4.0"></script>
+  <script src="app.js?v=4.0"></script>
 </body>
 </html>
