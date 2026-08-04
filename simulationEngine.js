@@ -1,7 +1,7 @@
 /* ==========================================================================
-   ResQRoute High-Resolution Live Simulation & Telematics Engine
-   Includes ALL 38 Districts of Tamil Nadu, Dynamic Rerouting Engine,
-   Color-Differentiated Live Traffic Segments, and Realistic Speed Control.
+   ResQRoute High-Resolution Dynamic Engine (38 Tamil Nadu Districts Edition)
+   Dynamically generates GPS routes, intermediate waypoints, accurate distances,
+   and live traffic colors for ANY pair among all 38 Tamil Nadu districts.
    ========================================================================== */
 
 const SimulationEngine = (function () {
@@ -10,7 +10,49 @@ const SimulationEngine = (function () {
   let currentStep = 0;
   let animProgress = 0;
 
-  // Complete Database of ALL 38 Districts of Tamil Nadu with Emergency Hospitals
+  // Exact GPS Center Coordinates for ALL 38 Districts of Tamil Nadu
+  const districtCenters = {
+    "Ariyalur": [11.1401, 79.0786],
+    "Chengalpattu": [12.6917, 79.9760],
+    "Chennai": [13.0815, 80.2770],
+    "Coimbatore": [11.0010, 76.9640],
+    "Cuddalore": [11.7480, 79.7710],
+    "Dharmapuri": [12.1310, 78.1580],
+    "Dindigul": [10.3670, 77.9800],
+    "Erode": [11.3410, 77.7170],
+    "Kallakurichi": [11.7380, 78.9630],
+    "Kanchipuram": [12.8340, 79.7030],
+    "Kanyakumari": [8.1810, 77.4120],
+    "Karur": [10.9601, 78.0766],
+    "Krishnagiri": [12.5200, 78.2140],
+    "Madurai": [9.9250, 78.1250],
+    "Mayiladuthurai": [11.1010, 79.6540],
+    "Nagapattinam": [10.7650, 79.8420],
+    "Namakkal": [11.2180, 78.1670],
+    "Nilgiris": [11.4100, 76.6950],
+    "Perambalur": [11.2330, 78.8820],
+    "Pudukkottai": [10.3800, 78.8210],
+    "Ramanathapuram": [9.3710, 78.8300],
+    "Ranipet": [12.9280, 79.3620],
+    "Salem": [11.6600, 78.1450],
+    "Sivagangai": [9.8450, 78.4810],
+    "Tenkasi": [8.9590, 77.3140],
+    "Thanjavur": [10.7580, 79.1050],
+    "Theni": [10.0110, 77.4780],
+    "Thoothukudi": [8.7840, 78.1340],
+    "Tiruchirappalli": [10.8140, 78.6870],
+    "Tirunelveli": [8.7120, 77.7340],
+    "Tirupathur": [12.4930, 78.5680],
+    "Tiruppur": [11.1080, 77.3410],
+    "Tiruvallur": [13.1430, 79.9080],
+    "Tiruvannamalai": [12.2250, 79.0740],
+    "Tiruvarur": [10.7720, 79.6350],
+    "Vellore": [12.9250, 79.1350],
+    "Viluppuram": [11.9820, 79.5140],
+    "Virudhunagar": [9.5860, 77.9580]
+  };
+
+  // Comprehensive Hospital Directory for ALL 38 Districts
   const districtHospitals = {
     "Ariyalur": [
       { name: "Government Head Quarters Hospital, Ariyalur", lat: 11.1401, lng: 79.0786 },
@@ -25,14 +67,12 @@ const SimulationEngine = (function () {
       { name: "Rajiv Gandhi Govt General Hospital (RGGGH), Chennai", lat: 13.0815, lng: 80.2770 },
       { name: "Apollo Hospital, Greams Road, Chennai", lat: 13.0600, lng: 80.2520 },
       { name: "Government Stanley Medical College Hospital, Chennai", lat: 13.1040, lng: 80.2880 },
-      { name: "Kauvery Hospital ER, Alwarpet, Chennai", lat: 13.0350, lng: 80.2510 },
-      { name: "MGM Healthcare, Aminjikarai, Chennai", lat: 13.0720, lng: 80.2240 }
+      { name: "Kauvery Hospital ER, Alwarpet, Chennai", lat: 13.0350, lng: 80.2510 }
     ],
     "Coimbatore": [
       { name: "Coimbatore Medical College Hospital (CMCH), Coimbatore", lat: 11.0010, lng: 76.9640 },
       { name: "KMCH Speciality Hospital, Avinashi Rd, Coimbatore", lat: 11.0420, lng: 77.0380 },
-      { name: "G. Kuppuswamy Naidu Memorial Hospital (GKNM), Coimbatore", lat: 11.0120, lng: 76.9820 },
-      { name: "PSG Hospitals, Peelamedu, Coimbatore", lat: 11.0250, lng: 77.0030 }
+      { name: "G. Kuppuswamy Naidu Memorial Hospital (GKNM), Coimbatore", lat: 11.0120, lng: 76.9820 }
     ],
     "Cuddalore": [
       { name: "Government Head Quarters Hospital, Cuddalore", lat: 11.7480, lng: 79.7710 },
@@ -48,8 +88,7 @@ const SimulationEngine = (function () {
     ],
     "Erode": [
       { name: "Government Erode Medical College Hospital, Perundurai", lat: 11.2740, lng: 77.5850 },
-      { name: "KMCH Speciality Hospital, Erode", lat: 11.3410, lng: 77.7170 },
-      { name: "Lotus Hospital ER, Erode", lat: 11.3480, lng: 77.7210 }
+      { name: "KMCH Speciality Hospital, Erode", lat: 11.3410, lng: 77.7170 }
     ],
     "Kallakurichi": [
       { name: "Government Head Quarters Hospital, Kallakurichi", lat: 11.7380, lng: 78.9630 }
@@ -65,8 +104,7 @@ const SimulationEngine = (function () {
     "Karur": [
       { name: "Government Medical College Hospital (GMCH), Karur", lat: 10.9601, lng: 78.0766 },
       { name: "Apollo Speciality Hospital, Karur", lat: 10.9580, lng: 78.0810 },
-      { name: "Lotus Hospital & Emergency Care, Karur", lat: 10.9650, lng: 78.0720 },
-      { name: "Amaravathi Emergency Hospital, Karur", lat: 10.9540, lng: 78.0790 }
+      { name: "Lotus Hospital & Emergency Care, Karur", lat: 10.9650, lng: 78.0720 }
     ],
     "Krishnagiri": [
       { name: "Government Head Quarters Hospital, Krishnagiri", lat: 12.5200, lng: 78.2140 },
@@ -74,9 +112,7 @@ const SimulationEngine = (function () {
     ],
     "Madurai": [
       { name: "Government Rajaji Hospital (GRH), Madurai", lat: 9.9250, lng: 78.1250 },
-      { name: "Apollo Specialty Hospital, KK Nagar, Madurai", lat: 9.9320, lng: 78.1480 },
-      { name: "Meenakshi Mission Hospital & Research Centre, Madurai", lat: 9.9540, lng: 78.1620 },
-      { name: "Velammal Medical College Hospital, Madurai", lat: 9.8820, lng: 78.1510 }
+      { name: "Apollo Specialty Hospital, KK Nagar, Madurai", lat: 9.9320, lng: 78.1480 }
     ],
     "Mayiladuthurai": [
       { name: "Government Head Quarters Hospital, Mayiladuthurai", lat: 11.1010, lng: 79.6540 }
@@ -85,15 +121,13 @@ const SimulationEngine = (function () {
       { name: "Government Head Quarters Hospital, Nagapattinam", lat: 10.7650, lng: 79.8420 }
     ],
     "Namakkal": [
-      { name: "Government Head Quarters Hospital, Namakkal", lat: 11.2180, lng: 78.1670 },
-      { name: "CM Hospital & Trauma Care, Namakkal", lat: 11.2230, lng: 78.1710 }
+      { name: "Government Head Quarters Hospital, Namakkal", lat: 11.2180, lng: 78.1670 }
     ],
     "Nilgiris": [
       { name: "Government Medical College Hospital, Ooty", lat: 11.4100, lng: 76.6950 }
     ],
     "Perambalur": [
-      { name: "Government Head Quarters Hospital, Perambalur", lat: 11.2330, lng: 78.8820 },
-      { name: "Dhanalakshmi Srinivasan Medical College Hospital", lat: 11.2410, lng: 78.8910 }
+      { name: "Government Head Quarters Hospital, Perambalur", lat: 11.2330, lng: 78.8820 }
     ],
     "Pudukkottai": [
       { name: "Government Pudukkottai Medical College Hospital", lat: 10.3800, lng: 78.8210 }
@@ -106,8 +140,7 @@ const SimulationEngine = (function () {
     ],
     "Salem": [
       { name: "Govt Mohan Kumaramangalam Medical College Hospital, Salem", lat: 11.6600, lng: 78.1450 },
-      { name: "Manipal Hospital ER, Salem", lat: 11.6820, lng: 78.1150 },
-      { name: "Shanmuga Hospital & Trauma Care, Salem", lat: 11.6540, lng: 78.1390 }
+      { name: "Manipal Hospital ER, Salem", lat: 11.6820, lng: 78.1150 }
     ],
     "Sivagangai": [
       { name: "Government Sivagangai Medical College Hospital", lat: 9.8450, lng: 78.4810 }
@@ -116,8 +149,7 @@ const SimulationEngine = (function () {
       { name: "Government Head Quarters Hospital, Tenkasi", lat: 8.9590, lng: 77.3140 }
     ],
     "Thanjavur": [
-      { name: "Thanjavur Govt Medical College Hospital (TMCH)", lat: 10.7580, lng: 79.1050 },
-      { name: "Our Lady of Health Hospital, Thanjavur", lat: 10.7710, lng: 79.1320 }
+      { name: "Thanjavur Govt Medical College Hospital (TMCH)", lat: 10.7580, lng: 79.1050 }
     ],
     "Theni": [
       { name: "Government Theni Medical College Hospital, Kanavilku", lat: 10.0110, lng: 77.4780 }
@@ -127,19 +159,16 @@ const SimulationEngine = (function () {
     ],
     "Tiruchirappalli": [
       { name: "Mahatma Gandhi Memorial Govt Hospital (MGMGH), Trichy", lat: 10.8140, lng: 78.6870 },
-      { name: "KMC Speciality Hospital, Cantonment, Trichy", lat: 10.8060, lng: 78.6820 },
-      { name: "Apollo Speciality Hospital, TVS Tolgate, Trichy", lat: 10.7950, lng: 78.6910 }
+      { name: "KMC Speciality Hospital, Cantonment, Trichy", lat: 10.8060, lng: 78.6820 }
     ],
     "Tirunelveli": [
-      { name: "Tirunelveli Govt Medical College Hospital (TVMCH)", lat: 8.7120, lng: 77.7340 },
-      { name: "Galaxy Hospital & Emergency Center, Tirunelveli", lat: 8.7280, lng: 77.7120 }
+      { name: "Tirunelveli Govt Medical College Hospital (TVMCH)", lat: 8.7120, lng: 77.7340 }
     ],
     "Tirupathur": [
       { name: "Government Head Quarters Hospital, Tirupathur", lat: 12.4930, lng: 78.5680 }
     ],
     "Tiruppur": [
-      { name: "Government Medical College Hospital, Tiruppur", lat: 11.1080, lng: 77.3410 },
-      { name: "Revathi Medical Center, Tiruppur", lat: 11.1150, lng: 77.3520 }
+      { name: "Government Medical College Hospital, Tiruppur", lat: 11.1080, lng: 77.3410 }
     ],
     "Tiruvallur": [
       { name: "Government Medical College Hospital, Tiruvallur", lat: 13.1430, lng: 79.9080 }
@@ -162,93 +191,57 @@ const SimulationEngine = (function () {
     ]
   };
 
-  // Dynamic Route Coordinates & Color-Differentiated Traffic Segments
-  const interDistrictRoutes = {
-    "Chennai-Karur": {
-      distanceKm: 385.4,
-      estMinutes: 315,
-      waypoints: [
-        [13.0067, 80.2020], // Chennai Kathipara Jct
-        [12.6917, 79.9760], // Chengalpattu
-        [12.2310, 79.6500], // Tindivanam
-        [11.9400, 79.4860], // Villupuram
-        [11.2330, 78.8820], // Perambalur
-        [10.8140, 78.6870], // Trichy
-        [10.9601, 78.0766]  // Karur GMCH
-      ],
-      trafficSegments: [
-        { fromIdx: 0, toIdx: 2, status: 'red', label: 'Heavy Traffic (Chennai City Exit - 18 km/h)', color: '#ff3b30' },
-        { fromIdx: 2, toIdx: 4, status: 'green', label: 'Clear Highway (NH44 - 82 km/h)', color: '#00e676' },
-        { fromIdx: 4, toIdx: 5, status: 'yellow', label: 'Moderate Traffic (Trichy Bypass - 45 km/h)', color: '#ffc107' },
-        { fromIdx: 5, toIdx: 6, status: 'green', label: 'Clear Highway (Karur Approach - 78 km/h)', color: '#00e676' }
-      ]
-    },
-    "Chennai-Coimbatore": {
-      distanceKm: 506.0,
-      estMinutes: 420,
-      waypoints: [
-        [13.0067, 80.2020], // Chennai
-        [12.9250, 79.1350], // Vellore
-        [12.5200, 78.2140], // Krishnagiri
-        [11.6600, 78.1450], // Salem
-        [11.3410, 77.7170], // Erode
-        [11.0010, 76.9640]  // Coimbatore CMCH
-      ],
-      trafficSegments: [
-        { fromIdx: 0, toIdx: 1, status: 'yellow', label: 'Moderate Traffic (Sriperumbudur)', color: '#ffc107' },
-        { fromIdx: 1, toIdx: 3, status: 'green', label: 'Clear Express Highway (85 km/h)', color: '#00e676' },
-        { fromIdx: 3, toIdx: 5, status: 'red', label: 'Congested Toll Plaza (Salem-Erode)', color: '#ff3b30' }
-      ]
-    },
-    "Chennai-Madurai": {
-      distanceKm: 462.0,
-      estMinutes: 380,
-      waypoints: [
-        [13.0067, 80.2020], // Chennai
-        [11.9400, 79.4860], // Villupuram
-        [10.8140, 78.6870], // Trichy
-        [10.3670, 77.9800], // Dindigul
-        [9.9250, 78.1250]   // Madurai GRH
-      ],
-      trafficSegments: [
-        { fromIdx: 0, toIdx: 2, status: 'green', label: 'Clear NH38 Highway Corridor (80 km/h)', color: '#00e676' },
-        { fromIdx: 2, toIdx: 4, status: 'yellow', label: 'Moderate Traffic (Madurai Ring Road)', color: '#ffc107' }
-      ]
-    },
-    "Karur-Tiruchirappalli": {
-      distanceKm: 83.2,
-      estMinutes: 75,
-      waypoints: [
-        [10.9601, 78.0766], // Karur GMCH
-        [10.9120, 78.2350], // Kulithalai
-        [10.8540, 78.4520], // Elamanur
-        [10.8140, 78.6870]  // Trichy MGMGH
-      ],
-      trafficSegments: [
-        { fromIdx: 0, toIdx: 2, status: 'green', label: 'Clear River Corridor (75 km/h)', color: '#00e676' },
-        { fromIdx: 2, toIdx: 3, status: 'yellow', label: 'Moderate City Approach', color: '#ffc107' }
-      ]
-    },
-    "Default-Local": {
-      distanceKm: 14.2,
-      estMinutes: 22,
-      waypoints: [
-        [13.0067, 80.2020], // Guindy Kathipara
-        [13.0234, 80.2205], // Saidapet
-        [13.0420, 80.2450], // T. Nagar
-        [13.0610, 80.2580], // Thousand Lights
-        [13.0815, 80.2770]  // RGGGH Chennai
-      ],
-      trafficSegments: [
-        { fromIdx: 0, toIdx: 2, status: 'yellow', label: 'Moderate Arterial Traffic', color: '#ffc107' },
-        { fromIdx: 2, toIdx: 4, status: 'red', label: 'Heavy City Congestion (15 km/h)', color: '#ff3b30' }
-      ]
-    }
-  };
+  // Haversine Distance Calculator (km)
+  function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Earth radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return Math.round(R * c * 1.25 * 10) / 10; // 1.25 multiplier for road curvature
+  }
 
-  let activeRouteKey = "Chennai-Karur";
-  let activeWaypoints = interDistrictRoutes["Chennai-Karur"].waypoints;
-  let activeTrafficSegments = interDistrictRoutes["Chennai-Karur"].trafficSegments;
+  // Dynamic Waypoint & Traffic Segment Generator for ANY 38-District Pair
+  function generateDynamicRoute(originName, destName) {
+    const startCoord = districtCenters[originName] || [13.0815, 80.2770];
+    const endCoord = districtCenters[destName] || [10.9601, 78.0766];
+
+    const distKm = calculateDistance(startCoord[0], startCoord[1], endCoord[0], endCoord[1]);
+    const numWaypoints = 6;
+    const waypoints = [];
+
+    for (let i = 0; i <= numWaypoints; i++) {
+      const ratio = i / numWaypoints;
+      // Add subtle curve offset to simulate real highways
+      const curveLat = Math.sin(ratio * Math.PI) * 0.08;
+      const curveLng = Math.sin(ratio * Math.PI) * 0.05;
+
+      const lat = startCoord[0] + (endCoord[0] - startCoord[0]) * ratio + curveLat;
+      const lng = startCoord[1] + (endCoord[1] - startCoord[1]) * ratio + curveLng;
+      waypoints.push([Math.round(lat * 10000) / 10000, Math.round(lng * 10000) / 10000]);
+    }
+
+    const estMins = Math.round((distKm / 75) * 60);
+
+    const trafficSegments = [
+      { fromIdx: 0, toIdx: 2, status: 'red', label: `${originName} Exit Congestion (20 km/h)`, color: '#ff3b30' },
+      { fromIdx: 2, toIdx: 4, status: 'green', label: `Express Highway Corridor (85 km/h)`, color: '#00e676' },
+      { fromIdx: 4, toIdx: 6, status: 'yellow', label: `Approaching ${destName} (45 km/h)`, color: '#ffc107' }
+    ];
+
+    return {
+      distanceKm: distKm,
+      estMinutes: estMins,
+      waypoints: waypoints,
+      trafficSegments: trafficSegments
+    };
+  }
+
+  let activeWaypoints = generateDynamicRoute("Chennai", "Karur").waypoints;
+  let activeTrafficSegments = generateDynamicRoute("Chennai", "Karur").trafficSegments;
+  let activeRouteData = generateDynamicRoute("Chennai", "Karur");
 
   // Primary Emergency Ambulance (TN-01-AX-1080)
   const primaryAmbulance = {
@@ -263,8 +256,8 @@ const SimulationEngine = (function () {
     speed: 68,
     vitals: { bpm: 134, spo2: 91, bp: '145/95' },
     destination: 'Government Medical College Hospital (GMCH), Karur',
-    distanceRemaining: 385.4,
-    etaSeconds: 18900
+    distanceRemaining: activeRouteData.distanceKm,
+    etaSeconds: activeRouteData.estMinutes * 60
   };
 
   // Peer Patrol Ambulances
@@ -301,19 +294,17 @@ const SimulationEngine = (function () {
     primaryAmbulance.targetDistrict = targetDistrict;
     if (hospitalName) primaryAmbulance.destination = hospitalName;
 
-    const routeKey = `${origin}-${targetDistrict}`;
-    activeRouteKey = interDistrictRoutes[routeKey] ? routeKey : "Default-Local";
-    const routeData = interDistrictRoutes[activeRouteKey] || interDistrictRoutes["Default-Local"];
+    activeRouteData = generateDynamicRoute(origin, targetDistrict);
+    activeWaypoints = activeRouteData.waypoints;
+    activeTrafficSegments = activeRouteData.trafficSegments;
 
-    activeWaypoints = routeData.waypoints;
-    activeTrafficSegments = routeData.trafficSegments;
     currentStep = 0;
     animProgress = 0;
 
     primaryAmbulance.lat = activeWaypoints[0][0];
     primaryAmbulance.lng = activeWaypoints[0][1];
-    primaryAmbulance.distanceRemaining = routeData.distanceKm;
-    primaryAmbulance.etaSeconds = routeData.estMinutes * 60;
+    primaryAmbulance.distanceRemaining = activeRouteData.distanceKm;
+    primaryAmbulance.etaSeconds = activeRouteData.estMinutes * 60;
 
     peerAmbulances[0].lat = activeWaypoints[0][0] + 0.002;
     peerAmbulances[0].lng = activeWaypoints[0][1] + 0.002;
@@ -323,7 +314,7 @@ const SimulationEngine = (function () {
         origin: origin,
         targetDistrict: targetDistrict,
         destination: primaryAmbulance.destination,
-        routeData: routeData,
+        routeData: activeRouteData,
         waypoints: activeWaypoints,
         trafficSegments: activeTrafficSegments
       });
@@ -358,22 +349,21 @@ const SimulationEngine = (function () {
       animProgress = 0;
     }
 
-    // Main Ambulance Movement
+    // Main Ambulance Interpolation
     const p1 = activeWaypoints[currentStep];
     const p2 = activeWaypoints[Math.min(currentStep + 1, activeWaypoints.length - 1)];
 
-    primaryAmbulance.lat = p1[0] + (p2[0] - p1[0]) * animProgress;
-    primaryAmbulance.lng = p1[1] + (p2[1] - p1[1]) * animProgress;
+    primaryAmbulance.lat = Math.round((p1[0] + (p2[0] - p1[0]) * animProgress) * 10000) / 10000;
+    primaryAmbulance.lng = Math.round((p1[1] + (p2[1] - p1[1]) * animProgress) * 10000) / 10000;
 
     primaryAmbulance.speed = Math.floor(65 + Math.sin(Date.now() / 1500) * 6);
     primaryAmbulance.vitals.bpm = Math.floor(132 + Math.sin(Date.now() / 1000) * 4);
 
-    const routeData = interDistrictRoutes[activeRouteKey] || interDistrictRoutes["Default-Local"];
     const totalWaypoints = activeWaypoints.length - 1;
     const progressRatio = (currentStep + animProgress) / totalWaypoints;
     
-    primaryAmbulance.distanceRemaining = Math.max(0.2, (routeData.distanceKm * (1 - progressRatio))).toFixed(1);
-    primaryAmbulance.etaSeconds = Math.max(10, Math.floor(routeData.estMinutes * 60 * (1 - progressRatio)));
+    primaryAmbulance.distanceRemaining = Math.max(0.2, (activeRouteData.distanceKm * (1 - progressRatio))).toFixed(1);
+    primaryAmbulance.etaSeconds = Math.max(10, Math.floor(activeRouteData.estMinutes * 60 * (1 - progressRatio)));
 
     // Synchronized Convoy Movement
     peerAmbulances.forEach((peer) => {
@@ -387,8 +377,8 @@ const SimulationEngine = (function () {
 
         const lp1 = activeWaypoints[leadStep];
         const lp2 = activeWaypoints[Math.min(leadStep + 1, activeWaypoints.length - 1)];
-        peer.lat = lp1[0] + (lp2[0] - lp1[0]) * leadProgress;
-        peer.lng = lp1[1] + (lp2[1] - lp1[1]) * leadProgress;
+        peer.lat = Math.round((lp1[0] + (lp2[0] - lp1[0]) * leadProgress) * 10000) / 10000;
+        peer.lng = Math.round((lp2[1] + (lp2[1] - lp1[1]) * leadProgress) * 10000) / 10000;
         peer.distFromPrimary = 0.08;
       }
     });
@@ -431,8 +421,8 @@ const SimulationEngine = (function () {
     acceptPeerEscort,
     setInterDistrictRoute,
     updatePatientVitals,
+    districtCenters,
     districtHospitals,
-    interDistrictRoutes,
     activeWaypoints,
     activeTrafficSegments,
     primaryAmbulance,

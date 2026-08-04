@@ -31,7 +31,7 @@
       <button class="btn-audio" id="toggleSoundBtn" title="Toggle Emergency Siren Sounds">
         <i class="fa-solid fa-volume-high"></i> <span id="soundStatus">Audio ON</span>
       </button>
-      <span class="time-display" id="currentTime">13:27:00</span>
+      <span class="time-display" id="currentTime">13:58:00</span>
     </div>
   </div>
 
@@ -95,6 +95,15 @@
           <div class="route-banner" id="routeBanner">
             <i class="fa-solid fa-route" style="color:#00b0ff;"></i>
             <span id="routeBannerText">Route: <strong>Chennai ➔ Karur (NH44/NH38)</strong></span>
+          </div>
+
+          <!-- LIVE AMBULANCE GPS COORDINATE TELEMATICS BOX -->
+          <div class="gps-telematics-box">
+            <i class="fa-solid fa-location-crosshairs pulse-blue"></i>
+            <div>
+              <span class="gps-label">LIVE AMBULANCE GPS POSITION</span>
+              <div class="gps-coords" id="liveGpsCoords">13.0815° N, 80.2770° E</div>
+            </div>
           </div>
 
           <!-- Telemetry Stats Grid -->

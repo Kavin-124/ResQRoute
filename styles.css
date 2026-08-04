@@ -1,6 +1,6 @@
 /* ==========================================================================
    ResQRoute Modern Emergency UI Design System
-   (All 38 TN Districts, Satellite Map & Color Traffic Edition)
+   (All 38 TN Districts, Satellite Map & Live GPS Telematics Edition)
    ========================================================================== */
 
 :root {
@@ -275,6 +275,46 @@ body {
   align-items: center;
   gap: 8px;
   margin-bottom: 10px;
+}
+
+/* LIVE GPS TELEMATICS BOX */
+.gps-telematics-box {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(0, 176, 255, 0.4);
+  padding: 8px 12px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.gps-telematics-box i {
+  font-size: 1.2rem;
+  color: var(--neon-blue);
+}
+
+.pulse-blue {
+  animation: pulseBlue 1.2s infinite alternate;
+}
+
+@keyframes pulseBlue {
+  0% { transform: scale(1); filter: drop-shadow(0 0 2px var(--neon-blue)); }
+  100% { transform: scale(1.15); filter: drop-shadow(0 0 8px var(--neon-blue)); }
+}
+
+.gps-label {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+  display: block;
+}
+
+.gps-coords {
+  font-family: monospace;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--neon-green);
 }
 
 .form-row {

@@ -175,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // DYNAMIC ROUTE RECALCULATOR & DELIVERER
+  // DYNAMIC ROUTE RECALCULATOR & DELIVERER FOR ANY OF THE 38 DISTRICTS
   deliverHospBtn.addEventListener('click', () => {
     const origin = originDistrictSelect.value;
     const targetDistrict = targetDistrictSelect.value;
@@ -203,8 +203,8 @@ document.addEventListener('DOMContentLoaded', () => {
     MapEngine.drawSegmentedTrafficRoute(SimulationEngine.activeWaypoints, SimulationEngine.activeTrafficSegments);
 
     playAlertChime();
-    document.getElementById('tickerText').textContent = `📍 ROUTE RECALCULATED: ${origin} to ${targetDistrict} (${SimulationEngine.primaryAmbulance.distanceRemaining} km). Hospital: "${chosenHospital}". Live traffic overlay updated!`;
-    alert(`📍 Emergency Route Recalculated!\n\nRoute: ${origin} ➔ ${targetDistrict}\nDistance: ${SimulationEngine.primaryAmbulance.distanceRemaining} km\nTarget Hospital: ${chosenHospital}\n\nBroadcasted to Lead Convoy Escort TN-07-PA-4421 & Hospital ER!`);
+    document.getElementById('tickerText').textContent = `📍 ROUTE RECALCULATED: ${origin} to ${targetDistrict} (${SimulationEngine.primaryAmbulance.distanceRemaining} km). Hospital: "${chosenHospital}". Live GPS overlay updated!`;
+    alert(`📍 Emergency Route Recalculated for ${origin} ➔ ${targetDistrict}!\n\nDistance: ${SimulationEngine.primaryAmbulance.distanceRemaining} km\nTarget Hospital: ${chosenHospital}\n\nBroadcasted to Lead Convoy Escort TN-07-PA-4421 & Hospital ER!`);
   });
 
   // Dynamic Peer List Rendering
@@ -296,7 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
     alert(`Patient Vitals for TN-01-AX-1080 transmitted to ${primaryAmb.destination}!`);
   });
 
-  // LIVE SIMULATION MOVEMENT
+  // LIVE SIMULATION MOVEMENT & GPS TELEMATICS UPDATER
   function startLiveSimulation() {
     SimulationEngine.start({
       onTick: (data) => {
@@ -305,6 +305,12 @@ document.addEventListener('DOMContentLoaded', () => {
         data.peers.forEach(peer => {
           MapEngine.updateAmbulancePos(peer.id, peer.lat, peer.lng);
         });
+
+        // UPDATE LIVE AMBULANCE GPS TELEMATICS DISPLAY
+        const gpsDisplay = document.getElementById('liveGpsCoords');
+        if (gpsDisplay) {
+          gpsDisplay.textContent = `${data.ambulance.lat.toFixed(4)}° N, ${data.ambulance.lng.toFixed(4)}° E`;
+        }
 
         document.getElementById('currentSpeed').textContent = `${data.ambulance.speed} km/h`;
         document.getElementById('distRemaining').textContent = `${data.ambulance.distanceRemaining} km`;
