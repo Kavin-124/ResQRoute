@@ -1,7 +1,7 @@
 /* ==========================================================================
    ResQRoute Leaflet Map Engine
    Supports Satellite Map Imagery, Color-Differentiated Live Traffic Segments,
-   and Dynamic Route Recalculation Rendering.
+   and Persistent Dynamic Route Line Rendering.
    ========================================================================== */
 
 const MapEngine = (function () {
@@ -9,6 +9,9 @@ const MapEngine = (function () {
   let activeTileLayer = null;
   let polylineSegments = [];
   let currentMapStyle = 'radar';
+
+  let lastWaypoints = [];
+  let lastSegments = [];
 
   let markers = {
     ambulances: {},
@@ -55,6 +58,11 @@ const MapEngine = (function () {
     }
 
     activeTileLayer = L.tileLayer(tileUrl, { maxZoom: 19 }).addTo(map);
+
+    // Re-draw active route line if present after changing map tiles
+    if (lastWaypoints && lastWaypoints.length >= 2) {
+      drawSegmentedTrafficRoute(lastWaypoints, lastSegments, true);
+    }
   }
 
   function createCustomIcon(className, iconFaClass) {
@@ -68,6 +76,11 @@ const MapEngine = (function () {
   }
 
   function addAmbulanceMarker(id, lat, lng, type, label) {
+    if (markers.ambulances[id]) {
+      markers.ambulances[id].setLatLng([lat, lng]);
+      return markers.ambulances[id];
+    }
+
     const iconClass = type === 'active' ? 'marker-active-amb' : 'marker-peer-amb';
     const faIcon = type === 'active' ? 'fa-solid fa-truck-medical' : 'fa-solid fa-shield-halved';
     const icon = createCustomIcon(iconClass, faIcon);
@@ -89,6 +102,8 @@ const MapEngine = (function () {
   function updateAmbulancePos(id, lat, lng) {
     if (markers.ambulances[id]) {
       markers.ambulances[id].setLatLng([lat, lng]);
+    } else {
+      addAmbulanceMarker(id, lat, lng, id === 'TN-01-AX-1080' ? 'active' : 'peer', id);
     }
   }
 
@@ -109,48 +124,64 @@ const MapEngine = (function () {
     return marker;
   }
 
-  function drawSegmentedTrafficRoute(waypoints, segments) {
-    // Clear previous polylines
+  // PERSISTENT COLOR-DIFFERENTIATED LIVE TRAFFIC ROUTE DRAWING
+  function drawSegmentedTrafficRoute(waypoints, segments, skipFitBounds = false) {
+    if (!waypoints || waypoints.length < 2) return;
+
+    lastWaypoints = waypoints;
+    lastSegments = segments || [];
+
+    // Clear previous polyline layers
     polylineSegments.forEach(layer => map.removeLayer(layer));
     polylineSegments = [];
 
-    if (!waypoints || waypoints.length === 0) return;
-
-    if (!segments || segments.length === 0) {
-      const line = L.polyline(waypoints, { color: '#00e676', weight: 6, opacity: 0.9 }).addTo(map);
-      polylineSegments.push(line);
-      map.fitBounds(line.getBounds(), { padding: [60, 60] });
-      return;
-    }
-
     const boundsGroup = L.featureGroup();
 
-    segments.forEach(seg => {
-      const segCoords = waypoints.slice(seg.fromIdx, seg.toIdx + 1);
-      if (segCoords.length >= 2) {
-        const polyline = L.polyline(segCoords, {
-          color: seg.color || '#00e676',
-          weight: 7,
-          opacity: 0.95,
-          lineCap: 'round',
-          lineJoin: 'round'
-        }).addTo(map);
+    if (!segments || segments.length === 0) {
+      const line = L.polyline(waypoints, {
+        color: '#00e676',
+        weight: 7,
+        opacity: 0.95,
+        lineCap: 'round',
+        lineJoin: 'round'
+      }).addTo(map);
+      polylineSegments.push(line);
+      boundsGroup.addLayer(line);
+    } else {
+      segments.forEach(seg => {
+        const segCoords = waypoints.slice(seg.fromIdx, seg.toIdx + 1);
+        if (segCoords.length >= 2) {
+          const polyline = L.polyline(segCoords, {
+            color: seg.color || '#00e676',
+            weight: 7,
+            opacity: 0.95,
+            lineCap: 'round',
+            lineJoin: 'round'
+          }).addTo(map);
 
-        polyline.bindPopup(`
-          <div style="color:#0f172a; font-weight:bold; font-family:sans-serif;">
-            <span style="color:${seg.color}">● LIVE TRAFFIC STATUS</span><br/>
-            ${seg.label}
-          </div>
-        `);
+          polyline.bindPopup(`
+            <div style="color:#0f172a; font-weight:bold; font-family:sans-serif;">
+              <span style="color:${seg.color}">● LIVE TRAFFIC STATUS</span><br/>
+              ${seg.label}
+            </div>
+          `);
 
-        polylineSegments.push(polyline);
-        boundsGroup.addLayer(polyline);
-      }
-    });
+          polylineSegments.push(polyline);
+          boundsGroup.addLayer(polyline);
+        }
+      });
+    }
 
-    if (boundsGroup.getLayers().length > 0) {
+    if (!skipFitBounds && boundsGroup.getLayers().length > 0) {
       map.fitBounds(boundsGroup.getBounds(), { padding: [60, 60] });
     }
+  }
+
+  function clearRoute() {
+    polylineSegments.forEach(layer => map.removeLayer(layer));
+    polylineSegments = [];
+    lastWaypoints = [];
+    lastSegments = [];
   }
 
   function addTrafficJamCircle(lat, lng) {
@@ -172,6 +203,7 @@ const MapEngine = (function () {
     updateAmbulancePos,
     addHospitalMarker,
     drawSegmentedTrafficRoute,
+    clearRoute,
     addTrafficJamCircle
   };
 })();

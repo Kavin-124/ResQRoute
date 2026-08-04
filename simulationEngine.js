@@ -1,7 +1,7 @@
 /* ==========================================================================
-   ResQRoute High-Resolution Dynamic Engine (No Default Route Edition)
-   No default route is loaded on startup. Routes are calculated and drawn
-   ONLY when the user explicitly selects Origin, Destination & Hospital.
+   ResQRoute High-Resolution Dynamic Engine
+   Dynamically generates GPS routes, intermediate waypoints, accurate distances,
+   and live traffic colors for ANY pair among all 38 Tamil Nadu districts.
    ========================================================================== */
 
 const SimulationEngine = (function () {
@@ -238,7 +238,6 @@ const SimulationEngine = (function () {
     };
   }
 
-  // NO DEFAULT ROUTE LOADED INITIALLY
   let activeRouteData = { distanceKm: 0, estMinutes: 0, waypoints: [], trafficSegments: [] };
   let activeWaypoints = [];
   let activeTrafficSegments = [];
@@ -334,7 +333,7 @@ const SimulationEngine = (function () {
 
   function tick() {
     if (!isRunning) return;
-    if (activeWaypoints.length < 2) return; // Do not animate if no route is calculated!
+    if (activeWaypoints.length < 2) return;
 
     animProgress += 0.025;
 
@@ -384,6 +383,7 @@ const SimulationEngine = (function () {
         arrived: false,
         ambulance: primaryAmbulance,
         peers: peerAmbulances,
+        waypoints: activeWaypoints,
         trafficSegments: activeTrafficSegments
       });
     }
@@ -420,8 +420,8 @@ const SimulationEngine = (function () {
     cleanDistrictName,
     districtCenters,
     districtHospitals,
-    activeWaypoints,
-    activeTrafficSegments,
+    get activeWaypoints() { return activeWaypoints; },
+    get activeTrafficSegments() { return activeTrafficSegments; },
     primaryAmbulance,
     peerAmbulances
   };

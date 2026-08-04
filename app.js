@@ -1,6 +1,7 @@
 /* ==========================================================================
-   ResQRoute Main Application Controller (No Default Route Edition)
-   Routes are calculated and drawn ONLY when user selects Origin & Destination.
+   ResQRoute Main Application Controller
+   Supports All 38 Districts of Tamil Nadu, Satellite Map Toggle,
+   Color-Differentiated Live Traffic, and Persistent Moving Route Rendering.
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -106,8 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
     MapEngine.addAmbulanceMarker(peer.id, peer.lat, peer.lng, 'peer', `${peer.id} (${peer.driver.split(' ')[1]})`);
   });
 
-  // DO NOT DRAW DEFAULT ROUTE ON STARTUP
-
+  // Role View Switching Handler (Ensures route stays drawn when navigating tabs)
   const roleBtns = document.querySelectorAll('.role-btn');
   const rolePanels = document.querySelectorAll('.role-panel');
 
@@ -124,6 +124,11 @@ document.addEventListener('DOMContentLoaded', () => {
           panel.classList.add('active');
         }
       });
+
+      // Maintain active route on map when switching roles
+      if (SimulationEngine.activeWaypoints && SimulationEngine.activeWaypoints.length >= 2) {
+        MapEngine.drawSegmentedTrafficRoute(SimulationEngine.activeWaypoints, SimulationEngine.activeTrafficSegments, true);
+      }
     });
   });
 
@@ -143,6 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const opt = document.createElement('option');
         opt.value = dist;
         opt.textContent = dist;
+        if (dist === 'Karur') opt.selected = true;
         originDistrictSelect.appendChild(opt);
       });
     }
@@ -153,6 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const opt = document.createElement('option');
         opt.value = dist;
         opt.textContent = `${dist} District`;
+        if (dist === 'Coimbatore') opt.selected = true;
         targetDistrictSelect.appendChild(opt);
       });
     }
@@ -185,6 +192,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (targetDistrictSelect) {
+    populateHospitalsForDistrict(targetDistrictSelect.value);
+
     targetDistrictSelect.addEventListener('change', () => {
       populateHospitalsForDistrict(targetDistrictSelect.value);
     });
@@ -235,7 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       MapEngine.addHospitalMarker('hosp-1', targetLat, targetLng, chosenHospital || `Emergency Hospital, ${targetDistrict}`);
-      MapEngine.drawSegmentedTrafficRoute(SimulationEngine.activeWaypoints, SimulationEngine.activeTrafficSegments);
+      MapEngine.drawSegmentedTrafficRoute(SimulationEngine.activeWaypoints, SimulationEngine.activeTrafficSegments, false);
 
       playAlertChime();
       document.getElementById('tickerText').textContent = `📍 EMERGENCY ROUTE CALCULATED: ${origin} to ${targetDistrict} (${SimulationEngine.primaryAmbulance.distanceRemaining} km). Hospital: "${chosenHospital}". Live GPS active!`;
@@ -334,6 +343,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // LIVE SIMULATION MOVEMENT & GPS TELEMATICS UPDATER
   function startLiveSimulation() {
     SimulationEngine.start({
       onTick: (data) => {
@@ -343,6 +353,11 @@ document.addEventListener('DOMContentLoaded', () => {
           data.peers.forEach(peer => {
             MapEngine.updateAmbulancePos(peer.id, peer.lat, peer.lng);
           });
+
+          // Ensure route polylines stay visible on the map while moving
+          if (data.waypoints && data.waypoints.length >= 2) {
+            MapEngine.drawSegmentedTrafficRoute(data.waypoints, data.trafficSegments, true);
+          }
 
           const gpsDisplay = document.getElementById('liveGpsCoords');
           if (gpsDisplay) {
@@ -384,7 +399,7 @@ document.addEventListener('DOMContentLoaded', () => {
       },
       onRouteChange: (data) => {
         MapEngine.updateAmbulancePos(data.ambulance.id, data.ambulance.lat, data.ambulance.lng);
-        MapEngine.drawSegmentedTrafficRoute(data.waypoints, data.trafficSegments);
+        MapEngine.drawSegmentedTrafficRoute(data.waypoints, data.trafficSegments, false);
         renderIncomingList();
         renderPeerList();
       },
