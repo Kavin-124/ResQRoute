@@ -1,0 +1,25 @@
+{
+  "name": "resqroute",
+  "version": "2.0.0",
+  "description": "Tamil Nadu Statewide Emergency Medical Service (EMS) Dynamic GPS Telematics & Convoy Escort Platform",
+  "main": "app.js",
+  "scripts": {
+    "start": "npx -y serve . -p 8080",
+    "dev": "npx -y serve . -p 8080"
+  },
+  "keywords": [
+    "resqroute",
+    "ambulance",
+    "ems",
+    "tamil-nadu",
+    "leaflet",
+    "gps",
+    "telematics",
+    "satellite-map"
+  ],
+  "author": "Kavin Ravi",
+  "license": "MIT",
+  "dependencies": {
+    "serve": "^14.2.4"
+  }
+}
