@@ -5,7 +5,6 @@
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Audio Synthesizer (Web Audio API)
   let audioCtx = null;
   let isSoundEnabled = true;
   let sirenOscillator = null;
@@ -65,7 +64,6 @@ document.addEventListener('DOMContentLoaded', () => {
     sirenOscillator = osc;
   }
 
-  // Sound Toggle Button
   const toggleSoundBtn = document.getElementById('toggleSoundBtn');
   const soundStatus = document.getElementById('soundStatus');
   toggleSoundBtn.addEventListener('click', () => {
@@ -75,16 +73,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!isSoundEnabled) toggleSirenSound(false);
   });
 
-  // Live Clock
   setInterval(() => {
     const now = new Date();
     document.getElementById('currentTime').textContent = now.toTimeString().split(' ')[0];
   }, 1000);
 
-  // Initialize Leaflet Map Engine
   MapEngine.initMap('map');
 
-  // SATELLITE MAP TOGGLE HANDLER
   const radarModeBtn = document.getElementById('radarModeBtn');
   const satModeBtn = document.getElementById('satModeBtn');
 
@@ -105,17 +100,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const primaryAmb = SimulationEngine.primaryAmbulance;
   const peerAmbs = SimulationEngine.peerAmbulances;
 
-  // Add Hospital & Ambulance Markers
-  let hospMarker = MapEngine.addHospitalMarker('hosp-1', 10.9601, 78.0766, primaryAmb.destination);
+  let hospMarker = MapEngine.addHospitalMarker('hosp-1', 11.0420, 77.0380, primaryAmb.destination);
   MapEngine.addAmbulanceMarker(primaryAmb.id, primaryAmb.lat, primaryAmb.lng, 'active', `${primaryAmb.id} (Main Transport)`);
   peerAmbs.forEach(peer => {
     MapEngine.addAmbulanceMarker(peer.id, peer.lat, peer.lng, 'peer', `${peer.id} (${peer.driver.split(' ')[1]})`);
   });
 
-  // Draw Color-Differentiated Traffic Segments
   MapEngine.drawSegmentedTrafficRoute(SimulationEngine.activeWaypoints, SimulationEngine.activeTrafficSegments);
 
-  // Role View Switching
   const roleBtns = document.querySelectorAll('.role-btn');
   const rolePanels = document.querySelectorAll('.role-panel');
 
@@ -135,7 +127,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // DYNAMIC POPULATOR FOR ALL 38 DISTRICTS OF TAMIL NADU
   const originDistrictSelect = document.getElementById('originDistrictSelect');
   const targetDistrictSelect = document.getElementById('targetDistrictSelect');
   const hospitalPresetSelect = document.getElementById('hospitalPresetSelect');
@@ -152,7 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const opt = document.createElement('option');
         opt.value = dist;
         opt.textContent = dist;
-        if (dist === 'Chennai') opt.selected = true;
+        if (dist === 'Karur') opt.selected = true;
         originDistrictSelect.appendChild(opt);
       });
     }
@@ -163,17 +154,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const opt = document.createElement('option');
         opt.value = dist;
         opt.textContent = `${dist} District`;
-        if (dist === 'Karur') opt.selected = true;
+        if (dist === 'Coimbatore') opt.selected = true;
         targetDistrictSelect.appendChild(opt);
       });
     }
   }
 
-  // Populate ALL 38 Districts dynamically on load
   initDistrictDropdowns();
 
-  function populateHospitalsForDistrict(district) {
+  function populateHospitalsForDistrict(rawDistrict) {
     if (!hospitalPresetSelect) return;
+    const district = SimulationEngine.cleanDistrictName(rawDistrict);
     hospitalPresetSelect.innerHTML = '';
     const hospitals = SimulationEngine.districtHospitals[district] || [
       { name: `Government Head Quarters Hospital, ${district}`, lat: 10.8, lng: 78.6 }
@@ -193,11 +184,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (targetDistrictSelect) {
-    populateHospitalsForDistrict(targetDistrictSelect.value.replace(' District', ''));
+    populateHospitalsForDistrict(targetDistrictSelect.value);
 
     targetDistrictSelect.addEventListener('change', () => {
-      const cleanDist = targetDistrictSelect.value.replace(' District', '');
-      populateHospitalsForDistrict(cleanDist);
+      populateHospitalsForDistrict(targetDistrictSelect.value);
     });
   }
 
@@ -211,11 +201,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // DYNAMIC ROUTE RECALCULATOR & DELIVERER FOR ANY OF THE 38 DISTRICTS
   if (deliverHospBtn) {
     deliverHospBtn.addEventListener('click', () => {
       const origin = originDistrictSelect.value;
-      const targetDistrict = targetDistrictSelect.value.replace(' District', '');
+      const targetDistrict = SimulationEngine.cleanDistrictName(targetDistrictSelect.value);
       let chosenHospital = hospitalPresetSelect.value;
 
       if (chosenHospital === 'CUSTOM') {
@@ -236,6 +225,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const targetLat = matchedHosp ? matchedHosp.lat : SimulationEngine.activeWaypoints[SimulationEngine.activeWaypoints.length - 1][0];
       const targetLng = matchedHosp ? matchedHosp.lng : SimulationEngine.activeWaypoints[SimulationEngine.activeWaypoints.length - 1][1];
 
+      // Instantly relocate markers to new origin & destination
+      MapEngine.updateAmbulancePos(primaryAmb.id, primaryAmb.lat, primaryAmb.lng);
+      peerAmbs.forEach(peer => {
+        MapEngine.updateAmbulancePos(peer.id, peer.lat, peer.lng);
+      });
+
       MapEngine.addHospitalMarker('hosp-1', targetLat, targetLng, chosenHospital);
       MapEngine.drawSegmentedTrafficRoute(SimulationEngine.activeWaypoints, SimulationEngine.activeTrafficSegments);
 
@@ -245,7 +240,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Dynamic Peer List Rendering
   function renderPeerList() {
     const peerListActive = document.getElementById('peerListActive');
     if (!peerListActive) return;
@@ -270,7 +264,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   renderPeerList();
 
-  // Dynamic Incoming List Rendering
   function renderIncomingList() {
     const incomingList = document.getElementById('incomingList');
     if (!incomingList) return;
@@ -289,7 +282,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   renderIncomingList();
 
-  // SOS Handler
   const triggerSosBtn = document.getElementById('triggerSosBtn');
   if (triggerSosBtn) {
     triggerSosBtn.addEventListener('click', () => {
@@ -302,7 +294,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Peer Escort Accept Handler
   const acceptPatrolBtn = document.getElementById('acceptPatrolBtn');
   const peerRequestBox = document.getElementById('peerRequestBox');
   const patrolStatusBox = document.getElementById('patrolStatusBox');
@@ -319,7 +310,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Patient Vitals Form Handler
   const updateVitalsBtn = document.getElementById('updateVitalsBtn');
   const sevBtns = document.querySelectorAll('.sev-btn');
   let selectedSeverity = 'CRITICAL';
@@ -341,7 +331,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // LIVE SIMULATION MOVEMENT & GPS TELEMATICS UPDATER
   function startLiveSimulation() {
     SimulationEngine.start({
       onTick: (data) => {
@@ -351,7 +340,6 @@ document.addEventListener('DOMContentLoaded', () => {
           MapEngine.updateAmbulancePos(peer.id, peer.lat, peer.lng);
         });
 
-        // UPDATE LIVE AMBULANCE GPS TELEMATICS DISPLAY
         const gpsDisplay = document.getElementById('liveGpsCoords');
         if (gpsDisplay) {
           gpsDisplay.textContent = `${data.ambulance.lat.toFixed(4)}° N, ${data.ambulance.lng.toFixed(4)}° E`;
@@ -381,6 +369,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (heartEl) heartEl.textContent = data.ambulance.vitals.bpm;
       },
       onRouteChange: (data) => {
+        MapEngine.updateAmbulancePos(data.ambulance.id, data.ambulance.lat, data.ambulance.lng);
+        MapEngine.drawSegmentedTrafficRoute(data.waypoints, data.trafficSegments);
         renderIncomingList();
         renderPeerList();
       },
@@ -392,7 +382,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   startLiveSimulation();
 
-  // Controls
   const simStartBtn = document.getElementById('simStartBtn');
   if (simStartBtn) simStartBtn.addEventListener('click', () => startLiveSimulation());
 
