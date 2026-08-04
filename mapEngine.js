@@ -1,10 +1,15 @@
 /* ==========================================================================
-   ResQRoute Leaflet Map Engine (Inter-District Highway Corridor Edition)
+   ResQRoute Leaflet Map Engine
+   Supports Satellite Map Imagery, Color-Differentiated Live Traffic Segments,
+   and Dynamic Route Recalculation Rendering.
    ========================================================================== */
 
 const MapEngine = (function () {
   let map = null;
-  let activePolyline = null;
+  let activeTileLayer = null;
+  let polylineSegments = [];
+  let currentMapStyle = 'radar';
+
   let markers = {
     ambulances: {},
     hospitals: {},
@@ -13,18 +18,43 @@ const MapEngine = (function () {
 
   const defaultCenter = [11.1271, 78.6569];
 
+  const tileLayers = {
+    radar: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+  };
+
   function initMap(containerId) {
     map = L.map(containerId, {
       zoomControl: true,
       attributionControl: false
     }).setView(defaultCenter, 8);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    activeTileLayer = L.tileLayer(tileLayers.radar, {
       maxZoom: 19,
-      attribution: '© OpenStreetMap contributors | ResQRoute Tamil Nadu EMS Network'
+      attribution: '© OpenStreetMap | Esri Satellite | ResQRoute TN EMS'
     }).addTo(map);
 
     return map;
+  }
+
+  function setMapStyle(style) {
+    if (currentMapStyle === style) return;
+    currentMapStyle = style;
+
+    if (activeTileLayer) {
+      map.removeLayer(activeTileLayer);
+    }
+
+    const tileUrl = tileLayers[style] || tileLayers.radar;
+    const tileContainer = document.getElementById('map');
+
+    if (style === 'satellite') {
+      tileContainer.classList.add('satellite-mode');
+    } else {
+      tileContainer.classList.remove('satellite-mode');
+    }
+
+    activeTileLayer = L.tileLayer(tileUrl, { maxZoom: 19 }).addTo(map);
   }
 
   function createCustomIcon(className, iconFaClass) {
@@ -79,21 +109,45 @@ const MapEngine = (function () {
     return marker;
   }
 
-  function drawRoute(coords, isEmergency = true) {
-    if (activePolyline) {
-      map.removeLayer(activePolyline);
+  function drawSegmentedTrafficRoute(waypoints, segments) {
+    polylineSegments.forEach(layer => map.removeLayer(layer));
+    polylineSegments = [];
+
+    if (!segments || segments.length === 0) {
+      const line = L.polyline(waypoints, { color: '#00e676', weight: 6, opacity: 0.9 }).addTo(map);
+      polylineSegments.push(line);
+      map.fitBounds(line.getBounds(), { padding: [60, 60] });
+      return;
     }
 
-    const color = isEmergency ? '#ff3b30' : '#00b0ff';
-    activePolyline = L.polyline(coords, {
-      color: color,
-      weight: 6,
-      opacity: 0.9,
-      lineCap: 'round',
-      lineJoin: 'round'
-    }).addTo(map);
+    const boundsGroup = L.featureGroup();
 
-    map.fitBounds(activePolyline.getBounds(), { padding: [60, 60] });
+    segments.forEach(seg => {
+      const segCoords = waypoints.slice(seg.fromIdx, seg.toIdx + 1);
+      if (segCoords.length >= 2) {
+        const polyline = L.polyline(segCoords, {
+          color: seg.color || '#00e676',
+          weight: 7,
+          opacity: 0.95,
+          lineCap: 'round',
+          lineJoin: 'round'
+        }).addTo(map);
+
+        polyline.bindPopup(`
+          <div style="color:#0f172a; font-weight:bold; font-family:sans-serif;">
+            <span style="color:${seg.color}">● LIVE TRAFFIC STATUS</span><br/>
+            ${seg.label}
+          </div>
+        `);
+
+        polylineSegments.push(polyline);
+        boundsGroup.addLayer(polyline);
+      }
+    });
+
+    if (boundsGroup.getLayers().length > 0) {
+      map.fitBounds(boundsGroup.getBounds(), { padding: [60, 60] });
+    }
   }
 
   function addTrafficJamCircle(lat, lng) {
@@ -103,17 +157,18 @@ const MapEngine = (function () {
       fillOpacity: 0.35,
       radius: 500
     }).addTo(map);
-    circle.bindPopup('<strong style="color:#d32f2f;">HIGHWAY BOTTLENECK / CONGESTION ALERT</strong>');
+    circle.bindPopup('<strong style="color:#d32f2f;">HEAVY TRAFFIC BOTTLENECK ALERT</strong>');
     markers.jams.push(circle);
     return circle;
   }
 
   return {
     initMap,
+    setMapStyle,
     addAmbulanceMarker,
     updateAmbulancePos,
     addHospitalMarker,
-    drawRoute,
+    drawSegmentedTrafficRoute,
     addTrafficJamCircle
   };
 })();

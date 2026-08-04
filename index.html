@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ResQRoute | Tamil Nadu District-Wise EMS Routing & Hospital Dispatch</title>
+  <title>ResQRoute | All 38 Tamil Nadu Districts EMS Routing & Satellite Traffic Map</title>
   
   <!-- Leaflet CSS for Maps -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -24,14 +24,14 @@
   <!-- Top Alert / Status Ticker Bar -->
   <div class="ticker-bar" id="tickerBar">
     <div class="ticker-content">
-      <span class="ticker-badge pulse-red"><i class="fa-solid fa-map-location-dot"></i> TAMIL NADU DISTRICT ROUTE SYSTEM</span>
-      <span id="tickerText">Inter-District Route Active — Chennai to Karur Highway Corridor (385.4 km). Convoy Escort & A2A Beacons Active.</span>
+      <span class="ticker-badge pulse-red"><i class="fa-solid fa-map-location-dot"></i> ALL 38 TAMIL NADU DISTRICTS ACTIVE</span>
+      <span id="tickerText">Chennai to Karur Highway Corridor (385.4 km). Color-Differentiated Live Traffic & Satellite View Synchronized.</span>
     </div>
     <div class="ticker-actions">
       <button class="btn-audio" id="toggleSoundBtn" title="Toggle Emergency Siren Sounds">
         <i class="fa-solid fa-volume-high"></i> <span id="soundStatus">Audio ON</span>
       </button>
-      <span class="time-display" id="currentTime">10:50:00</span>
+      <span class="time-display" id="currentTime">13:27:00</span>
     </div>
   </div>
 
@@ -42,7 +42,7 @@
         <i class="fa-solid fa-truck-medical siren-icon"></i>
       </div>
       <div class="brand-text">
-        <h1>ResQRoute <span class="tagline">Tamil Nadu District EMS Network</span></h1>
+        <h1>ResQRoute <span class="tagline">All 38 TN Districts EMS Network</span></h1>
       </div>
     </div>
 
@@ -105,7 +105,7 @@
             </div>
             <div class="stat-box">
               <span class="stat-label">Live Speed</span>
-              <span class="stat-value" id="currentSpeed">78 km/h</span>
+              <span class="stat-value" id="currentSpeed">68 km/h</span>
             </div>
             <div class="stat-box">
               <span class="stat-label">Highway Distance</span>
@@ -118,37 +118,99 @@
           </div>
         </div>
 
-        <!-- DISTRICT-WISE HOSPITAL SELECTOR & INTER-DISTRICT ROUTER -->
+        <!-- DISTRICT-WISE HOSPITAL SELECTOR & DYNAMIC REROUTER (ALL 38 DISTRICTS OF TAMIL NADU) -->
         <div class="panel-card spot-hospital-card">
           <div class="card-header">
-            <h3><i class="fa-solid fa-map-location-dot" style="color:#00b0ff"></i> District & Hospital Selector</h3>
-            <span class="status-pill status-available">TAMIL NADU EMS</span>
+            <h3><i class="fa-solid fa-map-location-dot" style="color:#00b0ff"></i> 38 Districts & Hospital Router</h3>
+            <span class="status-pill status-available">TN STATEWIDE</span>
           </div>
-          <p class="section-desc">Select Origin & Destination District to calculate accurate route, distance, traffic, and district hospitals.</p>
+          <p class="section-desc">Select Origin & Destination District (All 38 Districts) to calculate accurate route, distance, live traffic colors, and district hospitals.</p>
           <div class="hospital-form">
             <div class="form-row">
               <div class="form-group flex-1">
-                <label>Origin City / District</label>
+                <label>Origin District</label>
                 <select class="hospital-select" id="originDistrictSelect">
                   <option value="Chennai">Chennai</option>
-                  <option value="Karur">Karur</option>
+                  <option value="Ariyalur">Ariyalur</option>
+                  <option value="Chengalpattu">Chengalpattu</option>
                   <option value="Coimbatore">Coimbatore</option>
+                  <option value="Cuddalore">Cuddalore</option>
+                  <option value="Dharmapuri">Dharmapuri</option>
+                  <option value="Dindigul">Dindigul</option>
+                  <option value="Erode">Erode</option>
+                  <option value="Kallakurichi">Kallakurichi</option>
+                  <option value="Kanchipuram">Kanchipuram</option>
+                  <option value="Kanyakumari">Kanyakumari</option>
+                  <option value="Karur">Karur</option>
+                  <option value="Krishnagiri">Krishnagiri</option>
                   <option value="Madurai">Madurai</option>
-                  <option value="Tiruchirappalli">Tiruchirappalli (Trichy)</option>
+                  <option value="Mayiladuthurai">Mayiladuthurai</option>
+                  <option value="Nagapattinam">Nagapattinam</option>
+                  <option value="Namakkal">Namakkal</option>
+                  <option value="Nilgiris">Nilgiris</option>
+                  <option value="Perambalur">Perambalur</option>
+                  <option value="Pudukkottai">Pudukkottai</option>
+                  <option value="Ramanathapuram">Ramanathapuram</option>
+                  <option value="Ranipet">Ranipet</option>
                   <option value="Salem">Salem</option>
+                  <option value="Sivagangai">Sivagangai</option>
+                  <option value="Tenkasi">Tenkasi</option>
+                  <option value="Thanjavur">Thanjavur</option>
+                  <option value="Theni">Theni</option>
+                  <option value="Thoothukudi">Thoothukudi</option>
+                  <option value="Tiruchirappalli">Tiruchirappalli</option>
+                  <option value="Tirunelveli">Tirunelveli</option>
+                  <option value="Tirupathur">Tirupathur</option>
+                  <option value="Tiruppur">Tiruppur</option>
+                  <option value="Tiruvallur">Tiruvallur</option>
+                  <option value="Tiruvannamalai">Tiruvannamalai</option>
+                  <option value="Tiruvarur">Tiruvarur</option>
                   <option value="Vellore">Vellore</option>
+                  <option value="Viluppuram">Viluppuram</option>
+                  <option value="Virudhunagar">Virudhunagar</option>
                 </select>
               </div>
               <div class="form-group flex-1">
                 <label>Destination District</label>
                 <select class="hospital-select" id="targetDistrictSelect">
-                  <option value="Karur" selected>Karur District</option>
-                  <option value="Chennai">Chennai District</option>
-                  <option value="Coimbatore">Coimbatore District</option>
-                  <option value="Madurai">Madurai District</option>
-                  <option value="Tiruchirappalli">Tiruchirappalli District</option>
-                  <option value="Salem">Salem District</option>
-                  <option value="Vellore">Vellore District</option>
+                  <option value="Karur" selected>Karur</option>
+                  <option value="Ariyalur">Ariyalur</option>
+                  <option value="Chengalpattu">Chengalpattu</option>
+                  <option value="Chennai">Chennai</option>
+                  <option value="Coimbatore">Coimbatore</option>
+                  <option value="Cuddalore">Cuddalore</option>
+                  <option value="Dharmapuri">Dharmapuri</option>
+                  <option value="Dindigul">Dindigul</option>
+                  <option value="Erode">Erode</option>
+                  <option value="Kallakurichi">Kallakurichi</option>
+                  <option value="Kanchipuram">Kanchipuram</option>
+                  <option value="Kanyakumari">Kanyakumari</option>
+                  <option value="Krishnagiri">Krishnagiri</option>
+                  <option value="Madurai">Madurai</option>
+                  <option value="Mayiladuthurai">Mayiladuthurai</option>
+                  <option value="Nagapattinam">Nagapattinam</option>
+                  <option value="Namakkal">Namakkal</option>
+                  <option value="Nilgiris">Nilgiris</option>
+                  <option value="Perambalur">Perambalur</option>
+                  <option value="Pudukkottai">Pudukkottai</option>
+                  <option value="Ramanathapuram">Ramanathapuram</option>
+                  <option value="Ranipet">Ranipet</option>
+                  <option value="Salem">Salem</option>
+                  <option value="Sivagangai">Sivagangai</option>
+                  <option value="Tenkasi">Tenkasi</option>
+                  <option value="Thanjavur">Thanjavur</option>
+                  <option value="Theni">Theni</option>
+                  <option value="Thoothukudi">Thoothukudi</option>
+                  <option value="Tiruchirappalli">Tiruchirappalli</option>
+                  <option value="Tirunelveli">Tirunelveli</option>
+                  <option value="Tirupathur">Tirupathur</option>
+                  <option value="Tiruppur">Tiruppur</option>
+                  <option value="Tiruvallur">Tiruvallur</option>
+                  <option value="Tiruvannamalai">Tiruvannamalai</option>
+                  <option value="Tiruvarur">Tiruvarur</option>
+                  <option value="Vellore">Vellore</option>
+                  <option value="Viluppuram">Viluppuram</option>
+                  <option value="Virudhunagar">Virudhunagar</option>
                 </select>
               </div>
             </div>
@@ -166,7 +228,7 @@
             </div>
 
             <button class="btn-success full-width mt-8" id="deliverHospBtn">
-              <i class="fa-solid fa-paper-plane"></i> Calculate Route & Deliver On-The-Spot
+              <i class="fa-solid fa-paper-plane"></i> Calculate Route & Reroute Real-Time
             </button>
           </div>
         </div>
@@ -322,11 +384,22 @@
     <section class="map-container">
       <div id="map"></div>
 
-      <!-- Map Floating Overlay Legend -->
+      <!-- FLOATING SATELLITE / RADAR MAP TOGGLE BUTTON -->
+      <div class="map-tile-toggle">
+        <button class="btn-map-mode active" id="radarModeBtn"><i class="fa-solid fa-radar"></i> Radar Mode</button>
+        <button class="btn-map-mode" id="satModeBtn"><i class="fa-solid fa-earth-asia"></i> Satellite Map</button>
+      </div>
+
+      <!-- Map Floating Overlay Legend with Color-Differentiated Traffic -->
       <div class="map-legend">
+        <div class="legend-header"><strong>LIVE TRAFFIC STATUS</strong></div>
+        <div class="legend-item"><span class="legend-color traffic-green"></span> Clear Traffic (75–85 km/h)</div>
+        <div class="legend-item"><span class="legend-color traffic-yellow"></span> Moderate Congestion (40–50 km/h)</div>
+        <div class="legend-item"><span class="legend-color traffic-red"></span> Heavy Bottleneck (15–20 km/h)</div>
+        <hr class="legend-divider"/>
         <div class="legend-item"><span class="legend-color amb-active"></span> Main Transport (TN-01-AX-1080)</div>
-        <div class="legend-item"><span class="legend-color amb-peer"></span> Highway Convoy Escort (TN-07-PA-4421)</div>
-        <div class="legend-item"><span class="legend-color hospital-pin"></span> Selected District Destination Hospital</div>
+        <div class="legend-item"><span class="legend-color amb-peer"></span> Convoy Escort (TN-07-PA-4421)</div>
+        <div class="legend-item"><span class="legend-color hospital-pin"></span> Destination Hospital</div>
       </div>
     </section>
 

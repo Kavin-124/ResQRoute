@@ -1,6 +1,7 @@
 /* ==========================================================================
-   ResQRoute Main Application Logic
-   (District-Wise Emergency Hospital & Inter-District Route Engine Edition)
+   ResQRoute Main Application Controller
+   Supports All 38 Districts of Tamil Nadu, Satellite Map Toggle,
+   Color-Differentiated Live Traffic, and Dynamic Rerouting Engine.
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -74,14 +75,30 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!isSoundEnabled) toggleSirenSound(false);
   });
 
-  // Live Digital Clock
+  // Live Clock
   setInterval(() => {
     const now = new Date();
     document.getElementById('currentTime').textContent = now.toTimeString().split(' ')[0];
   }, 1000);
 
-  // Initialize Map Engine on Real Tamil Nadu Map
+  // Initialize Leaflet Map Engine
   MapEngine.initMap('map');
+
+  // SATELLITE MAP TOGGLE HANDLER
+  const radarModeBtn = document.getElementById('radarModeBtn');
+  const satModeBtn = document.getElementById('satModeBtn');
+
+  radarModeBtn.addEventListener('click', () => {
+    radarModeBtn.classList.add('active');
+    satModeBtn.classList.remove('active');
+    MapEngine.setMapStyle('radar');
+  });
+
+  satModeBtn.addEventListener('click', () => {
+    satModeBtn.classList.add('active');
+    radarModeBtn.classList.remove('active');
+    MapEngine.setMapStyle('satellite');
+  });
 
   const primaryAmb = SimulationEngine.primaryAmbulance;
   const peerAmbs = SimulationEngine.peerAmbulances;
@@ -93,7 +110,8 @@ document.addEventListener('DOMContentLoaded', () => {
     MapEngine.addAmbulanceMarker(peer.id, peer.lat, peer.lng, 'peer', `${peer.id} (${peer.driver.split(' ')[1]})`);
   });
 
-  MapEngine.drawRoute(SimulationEngine.activeWaypoints, true);
+  // Draw Color-Differentiated Traffic Segments
+  MapEngine.drawSegmentedTrafficRoute(SimulationEngine.activeWaypoints, SimulationEngine.activeTrafficSegments);
 
   // Role View Switching
   const roleBtns = document.querySelectorAll('.role-btn');
@@ -115,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // DYNAMIC DISTRICT-WISE HOSPITAL POPULATOR
+  // DYNAMIC DISTRICT-WISE HOSPITAL POPULATOR (ALL 38 DISTRICTS)
   const originDistrictSelect = document.getElementById('originDistrictSelect');
   const targetDistrictSelect = document.getElementById('targetDistrictSelect');
   const hospitalPresetSelect = document.getElementById('hospitalPresetSelect');
@@ -125,7 +143,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function populateHospitalsForDistrict(district) {
     hospitalPresetSelect.innerHTML = '';
-    const hospitals = SimulationEngine.districtHospitals[district] || [];
+    const hospitals = SimulationEngine.districtHospitals[district] || [
+      { name: `Government Head Quarters Hospital, ${district}`, lat: 10.8, lng: 78.6 }
+    ];
 
     hospitals.forEach(hosp => {
       const opt = document.createElement('option');
@@ -140,6 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
     hospitalPresetSelect.appendChild(customOpt);
   }
 
+  // Populate default district hospitals on load
   populateHospitalsForDistrict(targetDistrictSelect.value);
 
   targetDistrictSelect.addEventListener('change', () => {
@@ -154,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // INTER-DISTRICT ROUTE CALCULATOR & DELIVERER ON THE SPOT
+  // DYNAMIC ROUTE RECALCULATOR & DELIVERER
   deliverHospBtn.addEventListener('click', () => {
     const origin = originDistrictSelect.value;
     const targetDistrict = targetDistrictSelect.value;
@@ -179,11 +200,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const targetLng = matchedHosp ? matchedHosp.lng : SimulationEngine.activeWaypoints[SimulationEngine.activeWaypoints.length - 1][1];
 
     MapEngine.addHospitalMarker('hosp-1', targetLat, targetLng, chosenHospital);
-    MapEngine.drawRoute(SimulationEngine.activeWaypoints, true);
+    MapEngine.drawSegmentedTrafficRoute(SimulationEngine.activeWaypoints, SimulationEngine.activeTrafficSegments);
 
     playAlertChime();
-    document.getElementById('tickerText').textContent = `📍 ACCURATE ROUTE DELIVERED: ${origin} to ${targetDistrict} (${SimulationEngine.primaryAmbulance.distanceRemaining} km). Hospital: "${chosenHospital}". Convoy updated!`;
-    alert(`📍 Accurate Inter-District Emergency Route Delivered!\n\nRoute: ${origin} ➔ ${targetDistrict}\nDistance: ${SimulationEngine.primaryAmbulance.distanceRemaining} km\nDestination Hospital: ${chosenHospital}\n\nBroadcasted to Convoy Patrol Escort TN-07-PA-4421 & Hospital ER!`);
+    document.getElementById('tickerText').textContent = `📍 ROUTE RECALCULATED: ${origin} to ${targetDistrict} (${SimulationEngine.primaryAmbulance.distanceRemaining} km). Hospital: "${chosenHospital}". Live traffic overlay updated!`;
+    alert(`📍 Emergency Route Recalculated!\n\nRoute: ${origin} ➔ ${targetDistrict}\nDistance: ${SimulationEngine.primaryAmbulance.distanceRemaining} km\nTarget Hospital: ${chosenHospital}\n\nBroadcasted to Lead Convoy Escort TN-07-PA-4421 & Hospital ER!`);
   });
 
   // Dynamic Peer List Rendering
@@ -230,18 +251,18 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   renderIncomingList();
 
-  // Code Red SOS Handler
+  // SOS Handler
   const triggerSosBtn = document.getElementById('triggerSosBtn');
   triggerSosBtn.addEventListener('click', () => {
     SimulationEngine.triggerCodeRedSOS();
     toggleSirenSound(true);
     playAlertChime();
 
-    document.getElementById('tickerText').textContent = `🚨 INTER-DISTRICT CODE RED ACTIVE! Main Ambulance TN-01-AX-1080 & Convoy Escort TN-07-PA-4421 in Lead Convoy on ${primaryAmb.origin} ➔ ${primaryAmb.targetDistrict} Highway.`;
+    document.getElementById('tickerText').textContent = `🚨 CODE RED ACTIVE! Main Ambulance TN-01-AX-1080 & Convoy Escort TN-07-PA-4421 in Lead Convoy on ${primaryAmb.origin} ➔ ${primaryAmb.targetDistrict} Highway.`;
     renderPeerList();
   });
 
-  // Peer Patrol Accept Handler
+  // Peer Escort Accept Handler
   const acceptPatrolBtn = document.getElementById('acceptPatrolBtn');
   const peerRequestBox = document.getElementById('peerRequestBox');
   const patrolStatusBox = document.getElementById('patrolStatusBox');
@@ -275,7 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
     alert(`Patient Vitals for TN-01-AX-1080 transmitted to ${primaryAmb.destination}!`);
   });
 
-  // START SIMULATION AUTO-LIVE ON REAL TAMIL NADU MAP
+  // LIVE SIMULATION MOVEMENT
   function startLiveSimulation() {
     SimulationEngine.start({
       onTick: (data) => {
@@ -317,7 +338,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   startLiveSimulation();
 
-  // Manual Controls
+  // Controls
   document.getElementById('simStartBtn').addEventListener('click', () => {
     startLiveSimulation();
   });
