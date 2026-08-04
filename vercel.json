@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "name": "resqroute",
+  "cleanUrls": true,
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ]
+}
