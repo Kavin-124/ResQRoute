@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ResQRoute | Tamil Nadu District-Wise EMS Routing & Hospital Dispatch</title>
+  
+  <!-- Leaflet CSS for Maps -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  
+  <!-- Main CSS -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="theme-dark">
+
+  <!-- Top Alert / Status Ticker Bar -->
+  <div class="ticker-bar" id="tickerBar">
+    <div class="ticker-content">
+      <span class="ticker-badge pulse-red"><i class="fa-solid fa-map-location-dot"></i> TAMIL NADU DISTRICT ROUTE SYSTEM</span>
+      <span id="tickerText">Inter-District Route Active — Chennai to Karur Highway Corridor (385.4 km). Convoy Escort & A2A Beacons Active.</span>
+    </div>
+    <div class="ticker-actions">
+      <button class="btn-audio" id="toggleSoundBtn" title="Toggle Emergency Siren Sounds">
+        <i class="fa-solid fa-volume-high"></i> <span id="soundStatus">Audio ON</span>
+      </button>
+      <span class="time-display" id="currentTime">10:50:00</span>
+    </div>
+  </div>
+
+  <!-- Header / Navigation -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-logo">
+        <i class="fa-solid fa-truck-medical siren-icon"></i>
+      </div>
+      <div class="brand-text">
+        <h1>ResQRoute <span class="tagline">Tamil Nadu District EMS Network</span></h1>
+      </div>
+    </div>
+
+    <!-- Role View Switcher -->
+    <nav class="role-selector">
+      <button class="role-btn active" data-role="active-ambulance">
+        <i class="fa-solid fa-ambulance"></i>
+        <span>Main Transport</span>
+      </button>
+      <button class="role-btn" data-role="peer-patrol">
+        <i class="fa-solid fa-shield-halved"></i>
+        <span>Convoy Patrol Escort</span>
+        <span class="badge-count" id="peerAlertBadge">1</span>
+      </button>
+      <button class="role-btn" data-role="hospital-er">
+        <i class="fa-solid fa-hospital"></i>
+        <span>Hospital ER Desk</span>
+      </button>
+      <button class="role-btn" data-role="central-command">
+        <i class="fa-solid fa-tower-observation"></i>
+        <span>State EMS Command</span>
+      </button>
+    </nav>
+  </header>
+
+  <!-- Main View Container -->
+  <main class="main-layout">
+
+    <!-- Left Sidebar: Dynamic Control Panel based on Active Role -->
+    <aside class="sidebar" id="roleSidebar">
+
+      <!-- 1. ACTIVE AMBULANCE HUD PANEL -->
+      <div class="panel-section role-panel active" id="panel-active-ambulance">
+        <div class="panel-card emergency-card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-truck-medical"></i> Reg No: TN-01-AX-1080</h3>
+            <span class="status-pill status-code-red" id="ambStatusPill">CODE RED EMERGENCY</span>
+          </div>
+
+          <!-- SOS Big Button -->
+          <button class="sos-btn" id="triggerSosBtn">
+            <div class="sos-inner">
+              <i class="fa-solid fa-bullhorn sos-icon"></i>
+              <span class="sos-title">BROADCAST INTER-DISTRICT SOS</span>
+              <span class="sos-desc">Triggers A2A Peer Escort & Highway Green Corridor</span>
+            </div>
+          </button>
+
+          <!-- Live Route Header Banner -->
+          <div class="route-banner" id="routeBanner">
+            <i class="fa-solid fa-route" style="color:#00b0ff;"></i>
+            <span id="routeBannerText">Route: <strong>Chennai ➔ Karur (NH44/NH38)</strong></span>
+          </div>
+
+          <!-- Telemetry Stats Grid -->
+          <div class="telemetry-grid mt-8">
+            <div class="stat-box">
+              <span class="stat-label">Target Hospital</span>
+              <span class="stat-value highlight-blue" id="destHospitalName">GMCH Karur ER</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-label">Live Speed</span>
+              <span class="stat-value" id="currentSpeed">78 km/h</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-label">Highway Distance</span>
+              <span class="stat-value" id="distRemaining">385.4 km</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-label">Est. Time (ETA)</span>
+              <span class="stat-value highlight-red" id="etaMinutes">5h 15m</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- DISTRICT-WISE HOSPITAL SELECTOR & INTER-DISTRICT ROUTER -->
+        <div class="panel-card spot-hospital-card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-map-location-dot" style="color:#00b0ff"></i> District & Hospital Selector</h3>
+            <span class="status-pill status-available">TAMIL NADU EMS</span>
+          </div>
+          <p class="section-desc">Select Origin & Destination District to calculate accurate route, distance, traffic, and district hospitals.</p>
+          <div class="hospital-form">
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label>Origin City / District</label>
+                <select class="hospital-select" id="originDistrictSelect">
+                  <option value="Chennai">Chennai</option>
+                  <option value="Karur">Karur</option>
+                  <option value="Coimbatore">Coimbatore</option>
+                  <option value="Madurai">Madurai</option>
+                  <option value="Tiruchirappalli">Tiruchirappalli (Trichy)</option>
+                  <option value="Salem">Salem</option>
+                  <option value="Vellore">Vellore</option>
+                </select>
+              </div>
+              <div class="form-group flex-1">
+                <label>Destination District</label>
+                <select class="hospital-select" id="targetDistrictSelect">
+                  <option value="Karur" selected>Karur District</option>
+                  <option value="Chennai">Chennai District</option>
+                  <option value="Coimbatore">Coimbatore District</option>
+                  <option value="Madurai">Madurai District</option>
+                  <option value="Tiruchirappalli">Tiruchirappalli District</option>
+                  <option value="Salem">Salem District</option>
+                  <option value="Vellore">Vellore District</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group mt-6">
+              <label><i class="fa-solid fa-hospital"></i> Hospitals in Selected District</label>
+              <select class="hospital-select" id="hospitalPresetSelect">
+                <!-- Dynamically populated based on District -->
+              </select>
+            </div>
+
+            <div class="form-group" id="customHospGroup" style="display:none;">
+              <label>Custom Hospital / Address</label>
+              <input type="text" class="hosp-input" id="customHospInput" placeholder="e.g. Govt Hospital, Main Rd, Karur">
+            </div>
+
+            <button class="btn-success full-width mt-8" id="deliverHospBtn">
+              <i class="fa-solid fa-paper-plane"></i> Calculate Route & Deliver On-The-Spot
+            </button>
+          </div>
+        </div>
+
+        <!-- Patient Vitals & Condition Card -->
+        <div class="panel-card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-heart-pulse"></i> Patient Condition & Triage</h3>
+          </div>
+          <div class="patient-form">
+            <div class="form-group">
+              <label>Severity Level</label>
+              <div class="severity-selector">
+                <button class="sev-btn active red" data-sev="CRITICAL">Critical</button>
+                <button class="sev-btn yellow" data-sev="URGENT">Urgent</button>
+                <button class="sev-btn green" data-sev="STABLE">Stable</button>
+              </div>
+            </div>
+            <div class="vitals-row">
+              <div class="vital-item">
+                <i class="fa-solid fa-heart beat-icon"></i>
+                <span class="vital-name">BPM</span>
+                <span class="vital-val" id="vitalHeartRate">134</span>
+              </div>
+              <div class="vital-item">
+                <i class="fa-solid fa-wind"></i>
+                <span class="vital-name">SpO2</span>
+                <span class="vital-val" id="vitalSpo2">91%</span>
+              </div>
+              <div class="vital-item">
+                <i class="fa-solid fa-gauge"></i>
+                <span class="vital-name">BP</span>
+                <span class="vital-val" id="vitalBp">145/95</span>
+              </div>
+            </div>
+            <button class="btn-primary full-width mt-10" id="updateVitalsBtn">
+              <i class="fa-solid fa-paper-plane"></i> Transmit Vitals to ER
+            </button>
+          </div>
+        </div>
+
+        <!-- A2A Peer Patrol Radar Card -->
+        <div class="panel-card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-radar"></i> Highway Peer Escort Radar</h3>
+            <span class="badge-mini" id="peerCount">Convoy Traveling Together</span>
+          </div>
+          <div class="peer-list" id="peerListActive">
+            <!-- Dynamic Peer Items injected via JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. PEER PATROL AMBULANCE HUD PANEL -->
+      <div class="panel-section role-panel" id="panel-peer-patrol">
+        <div class="panel-card alert-highlight-card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-shield-halved"></i> Reg No: TN-07-PA-4421</h3>
+            <span class="status-pill status-available">HIGHWAY CONVOY ACTIVE</span>
+          </div>
+          <p class="section-desc">You are traveling in lock-step directly ahead of main ambulance <strong>TN-01-AX-1080</strong> clearing highway traffic on the Chennai ➔ Karur Corridor.</p>
+
+          <!-- Peer Alert Request Banner -->
+          <div class="peer-request-box" id="peerRequestBox">
+            <div class="request-header">
+              <i class="fa-solid fa-triangle-exclamation pulse-orange"></i>
+              <h4>TN HIGHWAY A2A CONVOY ESCORT ALERT</h4>
+            </div>
+            <p>Main Ambulance <strong>TN-01-AX-1080</strong> is traveling on route <strong id="peerRouteText">Chennai ➔ Karur</strong> towards <span id="peerTargetHospText">GMCH Karur ER</span>. Join as Lead Highway Convoy Escort!</p>
+            <div class="action-buttons">
+              <button class="btn-success" id="acceptPatrolBtn">
+                <i class="fa-solid fa-shield-cat"></i> Join Highway Convoy
+              </button>
+              <button class="btn-secondary" id="declinePatrolBtn">Decline</button>
+            </div>
+          </div>
+
+          <div class="patrol-status-box" id="patrolStatusBox" style="display:none;">
+            <div class="status-icon"><i class="fa-solid fa-car-side"></i></div>
+            <div class="status-info">
+              <h4>HIGHWAY CONVOY ESCORT ACTIVE</h4>
+              <p>TN-07-PA-4421 traveling 80m directly ahead of TN-01-AX-1080 on NH44 Corridor.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. HOSPITAL ER DASHBOARD PANEL -->
+      <div class="panel-section role-panel" id="panel-hospital-er">
+        <div class="panel-card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-hospital-user"></i> Incoming Ambulance Monitor</h3>
+          </div>
+          <div class="incoming-list" id="incomingList">
+            <!-- Dynamic Incoming Ambulance Items -->
+          </div>
+
+          <div class="er-prep-card mt-15">
+            <h4><i class="fa-solid fa-bed-pulse"></i> Trauma Bay 01 Readiness</h4>
+            <div class="prep-toggle">
+              <span>Trauma Bay 01 Status:</span>
+              <button class="btn-ready active" id="bayStatusBtn">
+                <i class="fa-solid fa-circle-check"></i> READY FOR ADMISSION
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. STATE EMS COMMAND PANEL -->
+      <div class="panel-section role-panel" id="panel-central-command">
+        <div class="panel-card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-chart-line"></i> Tamil Nadu Highway EMS Metrics</h3>
+          </div>
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <span class="metric-num highlight-red">1</span>
+              <span class="metric-label">Active Highway Run</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-num highlight-blue">1</span>
+              <span class="metric-label">Highway Convoy Escort</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-num highlight-green">42m</span>
+              <span class="metric-label">Highway Time Saved</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-num highlight-orange">385 km</span>
+              <span class="metric-label">Total Route Span</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Simulation Controller Card -->
+      <div class="panel-card sim-controls-card">
+        <div class="card-header">
+          <h3><i class="fa-solid fa-sliders"></i> Interactive Simulator Controls</h3>
+        </div>
+        <div class="sim-btn-group">
+          <button class="btn-sim" id="simStartBtn"><i class="fa-solid fa-play"></i> Run Simulation</button>
+          <button class="btn-sim" id="simPauseBtn"><i class="fa-solid fa-pause"></i> Pause</button>
+          <button class="btn-sim danger" id="simTrafficJamBtn"><i class="fa-solid fa-car-burst"></i> Add Traffic Jam</button>
+          <button class="btn-sim success" id="simPeerEscortBtn"><i class="fa-solid fa-shield"></i> Convoy Escort</button>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- Right Center: Interactive Leaflet Map Viewport -->
+    <section class="map-container">
+      <div id="map"></div>
+
+      <!-- Map Floating Overlay Legend -->
+      <div class="map-legend">
+        <div class="legend-item"><span class="legend-color amb-active"></span> Main Transport (TN-01-AX-1080)</div>
+        <div class="legend-item"><span class="legend-color amb-peer"></span> Highway Convoy Escort (TN-07-PA-4421)</div>
+        <div class="legend-item"><span class="legend-color hospital-pin"></span> Selected District Destination Hospital</div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Application Scripts -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="mapEngine.js"></script>
+  <script src="simulationEngine.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
