@@ -88,17 +88,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const radarModeBtn = document.getElementById('radarModeBtn');
   const satModeBtn = document.getElementById('satModeBtn');
 
-  radarModeBtn.addEventListener('click', () => {
-    radarModeBtn.classList.add('active');
-    satModeBtn.classList.remove('active');
-    MapEngine.setMapStyle('radar');
-  });
+  if (radarModeBtn && satModeBtn) {
+    radarModeBtn.addEventListener('click', () => {
+      radarModeBtn.classList.add('active');
+      satModeBtn.classList.remove('active');
+      MapEngine.setMapStyle('radar');
+    });
 
-  satModeBtn.addEventListener('click', () => {
-    satModeBtn.classList.add('active');
-    radarModeBtn.classList.remove('active');
-    MapEngine.setMapStyle('satellite');
-  });
+    satModeBtn.addEventListener('click', () => {
+      satModeBtn.classList.add('active');
+      radarModeBtn.classList.remove('active');
+      MapEngine.setMapStyle('satellite');
+    });
+  }
 
   const primaryAmb = SimulationEngine.primaryAmbulance;
   const peerAmbs = SimulationEngine.peerAmbulances;
@@ -133,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // DYNAMIC DISTRICT-WISE HOSPITAL POPULATOR (ALL 38 DISTRICTS)
+  // DYNAMIC POPULATOR FOR ALL 38 DISTRICTS OF TAMIL NADU
   const originDistrictSelect = document.getElementById('originDistrictSelect');
   const targetDistrictSelect = document.getElementById('targetDistrictSelect');
   const hospitalPresetSelect = document.getElementById('hospitalPresetSelect');
@@ -141,7 +143,37 @@ document.addEventListener('DOMContentLoaded', () => {
   const customHospInput = document.getElementById('customHospInput');
   const deliverHospBtn = document.getElementById('deliverHospBtn');
 
+  function initDistrictDropdowns() {
+    const allDistricts = Object.keys(SimulationEngine.districtCenters).sort();
+
+    if (originDistrictSelect) {
+      originDistrictSelect.innerHTML = '';
+      allDistricts.forEach(dist => {
+        const opt = document.createElement('option');
+        opt.value = dist;
+        opt.textContent = dist;
+        if (dist === 'Chennai') opt.selected = true;
+        originDistrictSelect.appendChild(opt);
+      });
+    }
+
+    if (targetDistrictSelect) {
+      targetDistrictSelect.innerHTML = '';
+      allDistricts.forEach(dist => {
+        const opt = document.createElement('option');
+        opt.value = dist;
+        opt.textContent = `${dist} District`;
+        if (dist === 'Karur') opt.selected = true;
+        targetDistrictSelect.appendChild(opt);
+      });
+    }
+  }
+
+  // Populate ALL 38 Districts dynamically on load
+  initDistrictDropdowns();
+
   function populateHospitalsForDistrict(district) {
+    if (!hospitalPresetSelect) return;
     hospitalPresetSelect.innerHTML = '';
     const hospitals = SimulationEngine.districtHospitals[district] || [
       { name: `Government Head Quarters Hospital, ${district}`, lat: 10.8, lng: 78.6 }
@@ -160,52 +192,58 @@ document.addEventListener('DOMContentLoaded', () => {
     hospitalPresetSelect.appendChild(customOpt);
   }
 
-  // Populate default district hospitals on load
-  populateHospitalsForDistrict(targetDistrictSelect.value);
+  if (targetDistrictSelect) {
+    populateHospitalsForDistrict(targetDistrictSelect.value.replace(' District', ''));
 
-  targetDistrictSelect.addEventListener('change', () => {
-    populateHospitalsForDistrict(targetDistrictSelect.value);
-  });
+    targetDistrictSelect.addEventListener('change', () => {
+      const cleanDist = targetDistrictSelect.value.replace(' District', '');
+      populateHospitalsForDistrict(cleanDist);
+    });
+  }
 
-  hospitalPresetSelect.addEventListener('change', () => {
-    if (hospitalPresetSelect.value === 'CUSTOM') {
-      customHospGroup.style.display = 'flex';
-    } else {
-      customHospGroup.style.display = 'none';
-    }
-  });
+  if (hospitalPresetSelect) {
+    hospitalPresetSelect.addEventListener('change', () => {
+      if (hospitalPresetSelect.value === 'CUSTOM') {
+        if (customHospGroup) customHospGroup.style.display = 'flex';
+      } else {
+        if (customHospGroup) customHospGroup.style.display = 'none';
+      }
+    });
+  }
 
   // DYNAMIC ROUTE RECALCULATOR & DELIVERER FOR ANY OF THE 38 DISTRICTS
-  deliverHospBtn.addEventListener('click', () => {
-    const origin = originDistrictSelect.value;
-    const targetDistrict = targetDistrictSelect.value;
-    let chosenHospital = hospitalPresetSelect.value;
+  if (deliverHospBtn) {
+    deliverHospBtn.addEventListener('click', () => {
+      const origin = originDistrictSelect.value;
+      const targetDistrict = targetDistrictSelect.value.replace(' District', '');
+      let chosenHospital = hospitalPresetSelect.value;
 
-    if (chosenHospital === 'CUSTOM') {
-      chosenHospital = customHospInput.value.trim() || `Govt Hospital, ${targetDistrict}`;
-    }
+      if (chosenHospital === 'CUSTOM') {
+        chosenHospital = customHospInput.value.trim() || `Govt Hospital, ${targetDistrict}`;
+      }
 
-    SimulationEngine.setInterDistrictRoute(origin, targetDistrict, chosenHospital);
+      SimulationEngine.setInterDistrictRoute(origin, targetDistrict, chosenHospital);
 
-    document.getElementById('routeBannerText').innerHTML = `Route: <strong>${origin} ➔ ${targetDistrict}</strong>`;
-    document.getElementById('destHospitalName').textContent = chosenHospital;
-    document.getElementById('peerRouteText').textContent = `${origin} ➔ ${targetDistrict}`;
-    document.getElementById('peerTargetHospText').textContent = chosenHospital;
+      document.getElementById('routeBannerText').innerHTML = `Route: <strong>${origin} ➔ ${targetDistrict}</strong>`;
+      document.getElementById('destHospitalName').textContent = chosenHospital;
+      document.getElementById('peerRouteText').textContent = `${origin} ➔ ${targetDistrict}`;
+      document.getElementById('peerTargetHospText').textContent = chosenHospital;
 
-    renderIncomingList();
+      renderIncomingList();
 
-    const districtHospitalsList = SimulationEngine.districtHospitals[targetDistrict] || [];
-    const matchedHosp = districtHospitalsList.find(h => h.name === chosenHospital);
-    const targetLat = matchedHosp ? matchedHosp.lat : SimulationEngine.activeWaypoints[SimulationEngine.activeWaypoints.length - 1][0];
-    const targetLng = matchedHosp ? matchedHosp.lng : SimulationEngine.activeWaypoints[SimulationEngine.activeWaypoints.length - 1][1];
+      const districtHospitalsList = SimulationEngine.districtHospitals[targetDistrict] || [];
+      const matchedHosp = districtHospitalsList.find(h => h.name === chosenHospital);
+      const targetLat = matchedHosp ? matchedHosp.lat : SimulationEngine.activeWaypoints[SimulationEngine.activeWaypoints.length - 1][0];
+      const targetLng = matchedHosp ? matchedHosp.lng : SimulationEngine.activeWaypoints[SimulationEngine.activeWaypoints.length - 1][1];
 
-    MapEngine.addHospitalMarker('hosp-1', targetLat, targetLng, chosenHospital);
-    MapEngine.drawSegmentedTrafficRoute(SimulationEngine.activeWaypoints, SimulationEngine.activeTrafficSegments);
+      MapEngine.addHospitalMarker('hosp-1', targetLat, targetLng, chosenHospital);
+      MapEngine.drawSegmentedTrafficRoute(SimulationEngine.activeWaypoints, SimulationEngine.activeTrafficSegments);
 
-    playAlertChime();
-    document.getElementById('tickerText').textContent = `📍 ROUTE RECALCULATED: ${origin} to ${targetDistrict} (${SimulationEngine.primaryAmbulance.distanceRemaining} km). Hospital: "${chosenHospital}". Live GPS overlay updated!`;
-    alert(`📍 Emergency Route Recalculated for ${origin} ➔ ${targetDistrict}!\n\nDistance: ${SimulationEngine.primaryAmbulance.distanceRemaining} km\nTarget Hospital: ${chosenHospital}\n\nBroadcasted to Lead Convoy Escort TN-07-PA-4421 & Hospital ER!`);
-  });
+      playAlertChime();
+      document.getElementById('tickerText').textContent = `📍 ROUTE RECALCULATED: ${origin} to ${targetDistrict} (${SimulationEngine.primaryAmbulance.distanceRemaining} km). Hospital: "${chosenHospital}". Live GPS overlay updated!`;
+      alert(`📍 Emergency Route Recalculated for ${origin} ➔ ${targetDistrict}!\n\nDistance: ${SimulationEngine.primaryAmbulance.distanceRemaining} km\nTarget Hospital: ${chosenHospital}\n\nBroadcasted to Lead Convoy Escort TN-07-PA-4421 & Hospital ER!`);
+    });
+  }
 
   // Dynamic Peer List Rendering
   function renderPeerList() {
@@ -253,28 +291,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // SOS Handler
   const triggerSosBtn = document.getElementById('triggerSosBtn');
-  triggerSosBtn.addEventListener('click', () => {
-    SimulationEngine.triggerCodeRedSOS();
-    toggleSirenSound(true);
-    playAlertChime();
+  if (triggerSosBtn) {
+    triggerSosBtn.addEventListener('click', () => {
+      SimulationEngine.triggerCodeRedSOS();
+      toggleSirenSound(true);
+      playAlertChime();
 
-    document.getElementById('tickerText').textContent = `🚨 CODE RED ACTIVE! Main Ambulance TN-01-AX-1080 & Convoy Escort TN-07-PA-4421 in Lead Convoy on ${primaryAmb.origin} ➔ ${primaryAmb.targetDistrict} Highway.`;
-    renderPeerList();
-  });
+      document.getElementById('tickerText').textContent = `🚨 CODE RED ACTIVE! Main Ambulance TN-01-AX-1080 & Convoy Escort TN-07-PA-4421 in Lead Convoy on ${primaryAmb.origin} ➔ ${primaryAmb.targetDistrict} Highway.`;
+      renderPeerList();
+    });
+  }
 
   // Peer Escort Accept Handler
   const acceptPatrolBtn = document.getElementById('acceptPatrolBtn');
   const peerRequestBox = document.getElementById('peerRequestBox');
   const patrolStatusBox = document.getElementById('patrolStatusBox');
 
-  acceptPatrolBtn.addEventListener('click', () => {
-    SimulationEngine.acceptPeerEscort('TN-07-PA-4421');
-    peerRequestBox.style.display = 'none';
-    patrolStatusBox.style.display = 'flex';
-    document.getElementById('peerAlertBadge').style.display = 'none';
-    playAlertChime();
-    renderPeerList();
-  });
+  if (acceptPatrolBtn) {
+    acceptPatrolBtn.addEventListener('click', () => {
+      SimulationEngine.acceptPeerEscort('TN-07-PA-4421');
+      if (peerRequestBox) peerRequestBox.style.display = 'none';
+      if (patrolStatusBox) patrolStatusBox.style.display = 'flex';
+      const badge = document.getElementById('peerAlertBadge');
+      if (badge) badge.style.display = 'none';
+      playAlertChime();
+      renderPeerList();
+    });
+  }
 
   // Patient Vitals Form Handler
   const updateVitalsBtn = document.getElementById('updateVitalsBtn');
@@ -289,12 +332,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  updateVitalsBtn.addEventListener('click', () => {
-    SimulationEngine.updatePatientVitals({}, selectedSeverity);
-    renderIncomingList();
-    playAlertChime();
-    alert(`Patient Vitals for TN-01-AX-1080 transmitted to ${primaryAmb.destination}!`);
-  });
+  if (updateVitalsBtn) {
+    updateVitalsBtn.addEventListener('click', () => {
+      SimulationEngine.updatePatientVitals({}, selectedSeverity);
+      renderIncomingList();
+      playAlertChime();
+      alert(`Patient Vitals for TN-01-AX-1080 transmitted to ${primaryAmb.destination}!`);
+    });
+  }
 
   // LIVE SIMULATION MOVEMENT & GPS TELEMATICS UPDATER
   function startLiveSimulation() {
@@ -312,25 +357,28 @@ document.addEventListener('DOMContentLoaded', () => {
           gpsDisplay.textContent = `${data.ambulance.lat.toFixed(4)}° N, ${data.ambulance.lng.toFixed(4)}° E`;
         }
 
-        document.getElementById('currentSpeed').textContent = `${data.ambulance.speed} km/h`;
-        document.getElementById('distRemaining').textContent = `${data.ambulance.distanceRemaining} km`;
+        const speedEl = document.getElementById('currentSpeed');
+        if (speedEl) speedEl.textContent = `${data.ambulance.speed} km/h`;
+
+        const distEl = document.getElementById('distRemaining');
+        if (distEl) distEl.textContent = `${data.ambulance.distanceRemaining} km`;
         
         const mins = Math.floor(data.ambulance.etaSeconds / 60);
         const hrs = Math.floor(mins / 60);
         const remMins = mins % 60;
         const etaFormatted = hrs > 0 ? `${hrs}h ${remMins}m` : `${mins}m ${data.ambulance.etaSeconds % 60}s`;
 
-        document.getElementById('etaMinutes').textContent = etaFormatted;
+        const etaEl = document.getElementById('etaMinutes');
+        if (etaEl) etaEl.textContent = etaFormatted;
         
         const erEtaDisplay = document.getElementById('erEtaDisplay');
-        if (erEtaDisplay) {
-          erEtaDisplay.textContent = etaFormatted;
-        }
+        if (erEtaDisplay) erEtaDisplay.textContent = etaFormatted;
 
         const erBpm = document.getElementById('erBpm');
         if (erBpm) erBpm.textContent = data.ambulance.vitals.bpm;
 
-        document.getElementById('vitalHeartRate').textContent = data.ambulance.vitals.bpm;
+        const heartEl = document.getElementById('vitalHeartRate');
+        if (heartEl) heartEl.textContent = data.ambulance.vitals.bpm;
       },
       onRouteChange: (data) => {
         renderIncomingList();
@@ -345,26 +393,34 @@ document.addEventListener('DOMContentLoaded', () => {
   startLiveSimulation();
 
   // Controls
-  document.getElementById('simStartBtn').addEventListener('click', () => {
-    startLiveSimulation();
-  });
+  const simStartBtn = document.getElementById('simStartBtn');
+  if (simStartBtn) simStartBtn.addEventListener('click', () => startLiveSimulation());
 
-  document.getElementById('simPauseBtn').addEventListener('click', () => {
-    SimulationEngine.pause();
-    toggleSirenSound(false);
-  });
+  const simPauseBtn = document.getElementById('simPauseBtn');
+  if (simPauseBtn) {
+    simPauseBtn.addEventListener('click', () => {
+      SimulationEngine.pause();
+      toggleSirenSound(false);
+    });
+  }
 
-  document.getElementById('simTrafficJamBtn').addEventListener('click', () => {
-    MapEngine.addTrafficJamCircle(11.9400, 79.4860);
-    playAlertChime();
-    document.getElementById('tickerText').textContent = `⚠️ Heavy highway congestion reported on ${primaryAmb.origin} ➔ ${primaryAmb.targetDistrict} route! Convoy Escort clearing path.`;
-  });
+  const simTrafficJamBtn = document.getElementById('simTrafficJamBtn');
+  if (simTrafficJamBtn) {
+    simTrafficJamBtn.addEventListener('click', () => {
+      MapEngine.addTrafficJamCircle(11.9400, 79.4860);
+      playAlertChime();
+      document.getElementById('tickerText').textContent = `⚠️ Heavy highway congestion reported on ${primaryAmb.origin} ➔ ${primaryAmb.targetDistrict} route! Convoy Escort clearing path.`;
+    });
+  }
 
-  document.getElementById('simPeerEscortBtn').addEventListener('click', () => {
-    SimulationEngine.acceptPeerEscort('TN-07-PA-4421');
-    peerRequestBox.style.display = 'none';
-    patrolStatusBox.style.display = 'flex';
-    renderPeerList();
-    playAlertChime();
-  });
+  const simPeerEscortBtn = document.getElementById('simPeerEscortBtn');
+  if (simPeerEscortBtn) {
+    simPeerEscortBtn.addEventListener('click', () => {
+      SimulationEngine.acceptPeerEscort('TN-07-PA-4421');
+      if (peerRequestBox) peerRequestBox.style.display = 'none';
+      if (patrolStatusBox) patrolStatusBox.style.display = 'flex';
+      renderPeerList();
+      playAlertChime();
+    });
+  }
 });
