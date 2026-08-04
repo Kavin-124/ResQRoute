@@ -2,6 +2,7 @@
    ResQRoute High-Resolution Dynamic Engine
    Dynamically generates GPS routes, intermediate waypoints, accurate distances,
    and live traffic colors for ANY pair among all 38 Tamil Nadu districts.
+   Enforces Lead Escort Distance < 100m (65m offset) and Stops Loop on Arrival.
    ========================================================================== */
 
 const SimulationEngine = (function () {
@@ -197,6 +198,21 @@ const SimulationEngine = (function () {
     return Math.round(R * c * 1.2 * 10) / 10;
   }
 
+  // Calculates a lead position exactly ~65 meters (strictly < 100m) ahead of main ambulance along highway vector
+  function getLeadEscortPos(mainLat, mainLng, nextLat, nextLng) {
+    const dLat = nextLat - mainLat;
+    const dLng = nextLng - mainLng;
+    const len = Math.sqrt(dLat * dLat + dLng * dLng);
+    if (len === 0) return { lat: mainLat + 0.0006, lng: mainLng + 0.0006 };
+
+    // 0.00065 degrees corresponds to ~65-70 meters on earth
+    const offset = 0.00065;
+    return {
+      lat: Math.round((mainLat + (dLat / len) * offset) * 10000) / 10000,
+      lng: Math.round((mainLng + (dLng / len) * offset) * 10000) / 10000
+    };
+  }
+
   function generateDynamicRoute(rawOrigin, rawDest) {
     const originName = cleanDistrictName(rawOrigin);
     const destName = cleanDistrictName(rawDest);
@@ -265,7 +281,7 @@ const SimulationEngine = (function () {
       status: 'PATROL READY',
       lat: 11.1300,
       lng: 78.6600,
-      distFromPrimary: 0,
+      distFromPrimary: 65, // Enforced < 100m
       isLeadEscort: false
     }
   ];
@@ -296,10 +312,16 @@ const SimulationEngine = (function () {
     if (activeWaypoints.length > 0) {
       primaryAmbulance.lat = activeWaypoints[0][0];
       primaryAmbulance.lng = activeWaypoints[0][1];
-      peerAmbulances[0].lat = activeWaypoints[0][0] + 0.002;
-      peerAmbulances[0].lng = activeWaypoints[0][1] + 0.002;
+
+      const leadPos = getLeadEscortPos(
+        activeWaypoints[0][0], activeWaypoints[0][1],
+        activeWaypoints[1][0], activeWaypoints[1][1]
+      );
+      peerAmbulances[0].lat = leadPos.lat;
+      peerAmbulances[0].lng = leadPos.lng;
       peerAmbulances[0].isLeadEscort = true;
       peerAmbulances[0].status = 'HIGHWAY CONVOY ESCORT';
+      peerAmbulances[0].distFromPrimary = 65;
     }
 
     primaryAmbulance.distanceRemaining = activeRouteData.distanceKm;
@@ -328,7 +350,10 @@ const SimulationEngine = (function () {
 
   function pause() {
     isRunning = false;
-    if (timerId) clearInterval(timerId);
+    if (timerId) {
+      clearInterval(timerId);
+      timerId = null;
+    }
   }
 
   function tick() {
@@ -342,9 +367,40 @@ const SimulationEngine = (function () {
       currentStep++;
     }
 
+    // CHECK IF AMBULANCE REACHES HOSPITAL -> STOP LOOP COMPLETELY (NO RESTARTING)
     if (currentStep >= activeWaypoints.length - 1) {
-      currentStep = 0;
-      animProgress = 0;
+      const finalHospPoint = activeWaypoints[activeWaypoints.length - 1];
+      
+      primaryAmbulance.lat = finalHospPoint[0];
+      primaryAmbulance.lng = finalHospPoint[1];
+      primaryAmbulance.speed = 0;
+      primaryAmbulance.distanceRemaining = "0.0";
+      primaryAmbulance.etaSeconds = 0;
+      primaryAmbulance.status = "PATIENT DELIVERED AT ER";
+
+      peerAmbulances[0].lat = finalHospPoint[0];
+      peerAmbulances[0].lng = finalHospPoint[1];
+      peerAmbulances[0].status = "CONVOY ESCORT COMPLETED";
+
+      pause(); // STOP SIMULATION LOOP COMPLETELY!
+
+      if (listeners.onTick) {
+        listeners.onTick({
+          arrived: true,
+          ambulance: primaryAmbulance,
+          peers: peerAmbulances,
+          waypoints: activeWaypoints,
+          trafficSegments: activeTrafficSegments
+        });
+      }
+
+      if (listeners.onHospitalDelivered) {
+        listeners.onHospitalDelivered({
+          ambulance: primaryAmbulance,
+          destination: primaryAmbulance.destination
+        });
+      }
+      return;
     }
 
     const p1 = activeWaypoints[currentStep];
@@ -359,22 +415,16 @@ const SimulationEngine = (function () {
     const totalWaypoints = activeWaypoints.length - 1;
     const progressRatio = (currentStep + animProgress) / totalWaypoints;
     
-    primaryAmbulance.distanceRemaining = Math.max(0.2, (activeRouteData.distanceKm * (1 - progressRatio))).toFixed(1);
-    primaryAmbulance.etaSeconds = Math.max(10, Math.floor(activeRouteData.estMinutes * 60 * (1 - progressRatio)));
+    primaryAmbulance.distanceRemaining = Math.max(0.1, (activeRouteData.distanceKm * (1 - progressRatio))).toFixed(1);
+    primaryAmbulance.etaSeconds = Math.max(5, Math.floor(activeRouteData.estMinutes * 60 * (1 - progressRatio)));
 
+    // Position lead escort ambulance EXACTLY ~65 meters (< 100m) ahead of main ambulance along highway vector
     peerAmbulances.forEach((peer) => {
       if (peer.isLeadEscort) {
-        let leadStep = currentStep;
-        let leadProgress = animProgress + 0.25;
-        if (leadProgress >= 1) {
-          leadProgress -= 1;
-          leadStep = Math.min(currentStep + 1, activeWaypoints.length - 1);
-        }
-
-        const lp1 = activeWaypoints[leadStep];
-        const lp2 = activeWaypoints[Math.min(leadStep + 1, activeWaypoints.length - 1)];
-        peer.lat = Math.round((lp1[0] + (lp2[0] - lp1[0]) * leadProgress) * 10000) / 10000;
-        peer.lng = Math.round((lp1[1] + (lp2[1] - lp1[1]) * leadProgress) * 10000) / 10000;
+        const leadPos = getLeadEscortPos(primaryAmbulance.lat, primaryAmbulance.lng, p2[0], p2[1]);
+        peer.lat = leadPos.lat;
+        peer.lng = leadPos.lng;
+        peer.distFromPrimary = 65;
       }
     });
 

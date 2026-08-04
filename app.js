@@ -1,7 +1,7 @@
 /* ==========================================================================
    ResQRoute Main Application Controller
    Supports All 38 Districts of Tamil Nadu, Satellite Map Toggle,
-   Color-Differentiated Live Traffic, and Persistent Moving Route Rendering.
+   Color-Differentiated Live Traffic, <100m Lead Escort, and Loop Termination on Arrival.
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -107,7 +107,6 @@ document.addEventListener('DOMContentLoaded', () => {
     MapEngine.addAmbulanceMarker(peer.id, peer.lat, peer.lng, 'peer', `${peer.id} (${peer.driver.split(' ')[1]})`);
   });
 
-  // Role View Switching Handler (Ensures route stays drawn when navigating tabs)
   const roleBtns = document.querySelectorAll('.role-btn');
   const rolePanels = document.querySelectorAll('.role-panel');
 
@@ -125,7 +124,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
 
-      // Maintain active route on map when switching roles
       if (SimulationEngine.activeWaypoints && SimulationEngine.activeWaypoints.length >= 2) {
         MapEngine.drawSegmentedTrafficRoute(SimulationEngine.activeWaypoints, SimulationEngine.activeTrafficSegments, true);
       }
@@ -247,8 +245,8 @@ document.addEventListener('DOMContentLoaded', () => {
       MapEngine.drawSegmentedTrafficRoute(SimulationEngine.activeWaypoints, SimulationEngine.activeTrafficSegments, false);
 
       playAlertChime();
-      document.getElementById('tickerText').textContent = `📍 EMERGENCY ROUTE CALCULATED: ${origin} to ${targetDistrict} (${SimulationEngine.primaryAmbulance.distanceRemaining} km). Hospital: "${chosenHospital}". Live GPS active!`;
-      alert(`📍 Emergency Route Calculated for ${origin} ➔ ${targetDistrict}!\n\nDistance: ${SimulationEngine.primaryAmbulance.distanceRemaining} km\nTarget Hospital: ${chosenHospital}\n\nBroadcasted to Lead Convoy Escort TN-07-PA-4421 & Hospital ER!`);
+      document.getElementById('tickerText').textContent = `📍 EMERGENCY ROUTE CALCULATED: ${origin} to ${targetDistrict} (${SimulationEngine.primaryAmbulance.distanceRemaining} km). Lead Escort <65m ahead. Live GPS active!`;
+      alert(`📍 Emergency Route Calculated for ${origin} ➔ ${targetDistrict}!\n\nDistance: ${SimulationEngine.primaryAmbulance.distanceRemaining} km\nTarget Hospital: ${chosenHospital}\nLead Escort: 65 meters ahead (<100m)\n\nBroadcasted to Lead Convoy Escort TN-07-PA-4421 & Hospital ER!`);
     });
   }
 
@@ -264,7 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <i class="fa-solid fa-truck-medical peer-icon"></i>
           <div>
             <div class="peer-name">Reg No: ${peer.id}</div>
-            <div class="peer-dist">${peer.status} • 80m Lead Escort</div>
+            <div class="peer-dist">${peer.status} • 65m Lead Escort (&lt;100m)</div>
           </div>
         </div>
         <span class="status-pill ${peer.isLeadEscort ? 'status-code-red' : 'status-available'}">
@@ -283,7 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="incoming-card">
         <div class="incoming-header">
           <span><i class="fa-solid fa-truck-medical" style="color:#ff3b30"></i> Reg No: ${primaryAmb.id}</span>
-          <span style="color:#00b0ff" id="erEtaDisplay">${primaryAmb.etaSeconds > 0 ? Math.floor(primaryAmb.etaSeconds / 60) + 'm' : 'Standby'}</span>
+          <span style="color:#00b0ff" id="erEtaDisplay">${primaryAmb.etaSeconds > 0 ? Math.floor(primaryAmb.etaSeconds / 60) + 'm' : (primaryAmb.status.includes('DELIVERED') ? 'Arrived' : 'Standby')}</span>
         </div>
         <div class="incoming-vitals">
           <span>Route: <strong>${primaryAmb.origin || '---'} ➔ ${primaryAmb.targetDistrict || '---'}</strong></span>
@@ -301,7 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
       toggleSirenSound(true);
       playAlertChime();
 
-      document.getElementById('tickerText').textContent = `🚨 CODE RED ACTIVE! Main Ambulance TN-01-AX-1080 & Convoy Escort TN-07-PA-4421 in Lead Convoy.`;
+      document.getElementById('tickerText').textContent = `🚨 CODE RED ACTIVE! Main Ambulance TN-01-AX-1080 & Convoy Escort TN-07-PA-4421 (<65m Lead).`;
       renderPeerList();
     });
   }
@@ -343,7 +341,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // LIVE SIMULATION MOVEMENT & GPS TELEMATICS UPDATER
   function startLiveSimulation() {
     SimulationEngine.start({
       onTick: (data) => {
@@ -354,7 +351,6 @@ document.addEventListener('DOMContentLoaded', () => {
             MapEngine.updateAmbulancePos(peer.id, peer.lat, peer.lng);
           });
 
-          // Ensure route polylines stay visible on the map while moving
           if (data.waypoints && data.waypoints.length >= 2) {
             MapEngine.drawSegmentedTrafficRoute(data.waypoints, data.trafficSegments, true);
           }
@@ -373,29 +369,31 @@ document.addEventListener('DOMContentLoaded', () => {
           const mins = Math.floor(data.ambulance.etaSeconds / 60);
           const hrs = Math.floor(mins / 60);
           const remMins = mins % 60;
-          const etaFormatted = hrs > 0 ? `${hrs}h ${remMins}m` : `${mins}m ${data.ambulance.etaSeconds % 60}s`;
+          const etaFormatted = data.ambulance.etaSeconds === 0 ? 'Arrived' : (hrs > 0 ? `${hrs}h ${remMins}m` : `${mins}m ${data.ambulance.etaSeconds % 60}s`);
 
           const etaEl = document.getElementById('etaMinutes');
           if (etaEl) etaEl.textContent = etaFormatted;
           
           const erEtaDisplay = document.getElementById('erEtaDisplay');
           if (erEtaDisplay) erEtaDisplay.textContent = etaFormatted;
-        } else {
-          const speedEl = document.getElementById('currentSpeed');
-          if (speedEl) speedEl.textContent = `0 km/h`;
-
-          const distEl = document.getElementById('distRemaining');
-          if (distEl) distEl.textContent = `--- km`;
-
-          const etaEl = document.getElementById('etaMinutes');
-          if (etaEl) etaEl.textContent = `---`;
         }
+      },
+      onHospitalDelivered: (data) => {
+        document.getElementById('tickerText').textContent = `🏥 PATIENT DELIVERED SAFELY! Ambulance TN-01-AX-1080 arrived at "${data.destination}". Highway Convoy Completed.`;
+        const ambPill = document.getElementById('ambStatusPill');
+        if (ambPill) {
+          ambPill.textContent = 'PATIENT DELIVERED AT ER';
+          ambPill.className = 'status-pill status-available';
+        }
+        document.getElementById('currentSpeed').textContent = '0 km/h';
+        document.getElementById('distRemaining').textContent = '0.0 km';
+        document.getElementById('etaMinutes').textContent = 'Arrived';
+        const erEta = document.getElementById('erEtaDisplay');
+        if (erEta) erEta.textContent = 'Arrived';
 
-        const erBpm = document.getElementById('erBpm');
-        if (erBpm) erBpm.textContent = data.ambulance.vitals.bpm;
-
-        const heartEl = document.getElementById('vitalHeartRate');
-        if (heartEl) heartEl.textContent = data.ambulance.vitals.bpm;
+        toggleSirenSound(false);
+        playAlertChime();
+        alert(`🏥 PATIENT SAFELY DELIVERED TO ER!\n\nTarget Hospital: ${data.destination}\nStatus: ER Triage Handover Complete.\n\nSimulation Loop Stopped.`);
       },
       onRouteChange: (data) => {
         MapEngine.updateAmbulancePos(data.ambulance.id, data.ambulance.lat, data.ambulance.lng);
