@@ -214,6 +214,14 @@ http://localhost:8080
 
 ---
 
+---
+
+🌐 Live Demo & Deployment
+Live Web Application: https://lifepulse-emergency.vercel.app/
+GitHub Repository: https://github.com/Kavin-124/lifepulse-emergency
+
+---
+
 ## 🎯 Project Goals
 
 ResQRoute demonstrates how web technologies can be used to visualize emergency transport scenarios through:
