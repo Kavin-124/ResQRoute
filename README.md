@@ -1,74 +1,255 @@
-# 🚑 ResQRoute — Tamil Nadu Statewide Emergency Medical Service (EMS) Network
+# 🚑 ResQRoute — Emergency Medical Routing & Telematics Simulator
 
-**ResQRoute** is an advanced, high-resolution Emergency Medical Services (EMS) routing, telematics, and highway convoy escort platform designed specifically for the state of **Tamil Nadu**.
+<div align="center">
+
+![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-F7DF1E?style=for-the-badge\&logo=javascript\&logoColor=black)
+![Leaflet](https://img.shields.io/badge/Leaflet-Maps-199900?style=for-the-badge\&logo=leaflet)
+![OpenStreetMap](https://img.shields.io/badge/OpenStreetMap-Maps-7EBC6F?style=for-the-badge\&logo=openstreetmap\&logoColor=white)
+![Vercel](https://img.shields.io/badge/Vercel-Deployment-black?style=for-the-badge\&logo=vercel)
+
+### Dynamic emergency routing and ambulance convoy simulation across Tamil Nadu.
+
+ResQRoute is a browser-based emergency medical routing and telematics simulation platform focused on dynamic ambulance routes, traffic visualization, hospital arrival and escort-vehicle coordination.
+
+[📂 Repository](https://github.com/Kavin-124/ResQRoute)
+
+</div>
 
 ---
 
-## 🌟 Key Features
+## 📌 Overview
 
-### 📍 1. Dynamic 38-District Highway Route Engine
-- Full support for **ALL 38 Districts of Tamil Nadu**:
-  * *Ariyalur, Chengalpattu, Chennai, Coimbatore, Cuddalore, Dharmapuri, Dindigul, Erode, Kallakurichi, Kanchipuram, Kanyakumari, Karur, Krishnagiri, Madurai, Mayiladuthurai, Nagapattinam, Namakkal, Nilgiris, Perambalur, Pudukkottai, Ramanathapuram, Ranipet, Salem, Sivagangai, Tenkasi, Thanjavur, Theni, Thoothukudi, Tiruchirappalli, Tirunelveli, Tirupathur, Tiruppur, Tiruvallur, Tiruvannamalai, Tiruvarur, Vellore, Viluppuram, Virudhunagar.*
-- Select **ANY Origin & Destination District** to dynamically calculate:
-  - Real-world curvature-adjusted highway distance (km).
-  - Estimated Travel Time (ETA).
-  - Multi-point intermediate highway waypoints.
+**ResQRoute** is an interactive Emergency Medical Services (EMS) routing simulator designed around ambulance movement across Tamil Nadu.
 
-### 🚥 2. Color-Differentiated Live Traffic Status
-- Visualizes real-time highway segment conditions directly on the map:
-  - 🟢 **Green Polyline:** Clear Highway Corridor (75–85 km/h)
-  - 🟡 **Yellow Polyline:** Moderate Congestion (40–50 km/h)
-  - 🔴 **Red Polyline:** Heavy Bottleneck / District Exit (15–20 km/h)
+The application models:
 
-### 🌍 3. Esri High-Resolution Satellite Map Toggle
-- Switch seamlessly between:
-  - 🛰️ **Esri World Imagery (Satellite Mode)** for detailed real-world satellite terrain.
-  - 📡 **OpenStreetMap (Radar Mode)** for vector maps.
+* District-to-district emergency routes
+* GPS waypoints
+* Traffic conditions
+* Ambulance movement
+* Escort vehicle positioning
+* Hospital destinations
+* Arrival and telemetry states
 
-### 🛡️ 4. A2A Lead Convoy Escort (<100m Lead Gap)
-- Escort vehicle (`TN-07-PA-4421`) automatically locks in formation **~65 meters directly ahead** (<100m) of the main ambulance (`TN-01-AX-1080`) to clear highway traffic.
+The project combines interactive maps with a custom simulation engine to visualize emergency transport scenarios.
 
-### 🏥 5. Hospital Arrival & Loop Termination
-- Automatically stops the animation loop upon arrival at the destination hospital.
-- Triggers ER admission handover alerts and locks telemetry to `0 km/h` and `Arrived`.
+---
+
+## ✨ Key Features
+
+### 🗺️ Tamil Nadu District Routing
+
+The routing engine contains coordinate data for **all 38 districts of Tamil Nadu**.
+
+Users can select origin and destination districts to generate a simulated emergency route.
+
+The engine produces:
+
+* Route waypoints
+* Estimated distance
+* Estimated travel time
+* District-based route information
+
+### 🚑 Ambulance Simulation
+
+The application simulates ambulance movement along generated GPS waypoints.
+
+The simulation updates the ambulance's position progressively to represent live movement.
+
+### 🚦 Traffic Visualization
+
+Route segments can display different traffic states:
+
+| Indicator | Condition           |
+| --------- | ------------------- |
+| 🟢 Green  | Clear               |
+| 🟡 Yellow | Moderate congestion |
+| 🔴 Red    | Heavy congestion    |
+
+This provides a visual representation of traffic conditions along the emergency corridor.
+
+### 🛡️ Convoy Escort Simulation
+
+ResQRoute includes an escort vehicle simulation where the lead vehicle maintains a controlled distance ahead of the ambulance.
+
+The simulation targets a lead gap of approximately **65 metres**, keeping it below the project's 100-metre threshold.
+
+### 🏥 Hospital Arrival
+
+When the simulated ambulance reaches the destination:
+
+* Movement stops
+* Telemetry is updated
+* Arrival status is displayed
+* Hospital handover state can be represented
+
+### 🛰️ Satellite / Map Views
+
+The map interface supports switching between:
+
+* OpenStreetMap
+* Esri satellite imagery
+
+This provides both road-map and satellite-based visualization.
+
+---
+
+## 🏗️ System Architecture
+
+```mermaid
+graph TD
+
+    USER[User]
+
+    USER --> UI[Web Interface]
+
+    UI --> APP[Application Controller]
+
+    APP --> SIM[Simulation Engine]
+    APP --> MAP[Map Engine]
+
+    SIM --> ROUTE[Route & Waypoint Generation]
+    SIM --> TRAFFIC[Traffic Simulation]
+    SIM --> AMB[Ambulance Position]
+    SIM --> ESCORT[Escort Vehicle]
+
+    ROUTE --> MAP
+    TRAFFIC --> MAP
+    AMB --> MAP
+    ESCORT --> MAP
+
+    MAP --> LEAFLET[Leaflet]
+    MAP --> OSM[OpenStreetMap]
+    MAP --> ESRI[Esri Satellite Imagery]
+```
+
+---
+
+## 🛠️ Technology Stack
+
+| Technology               | Purpose                             |
+| ------------------------ | ----------------------------------- |
+| HTML5                    | Application structure               |
+| CSS3                     | UI and responsive styling           |
+| JavaScript               | Application logic                   |
+| Leaflet                  | Interactive mapping                 |
+| OpenStreetMap            | Map tiles                           |
+| Esri Imagery             | Satellite visualization             |
+| Custom Simulation Engine | GPS movement and routing simulation |
+| Vercel                   | Deployment                          |
+
+---
+
+## 📂 Project Structure
+
+```text
+ResQRoute/
+├── index.html
+├── styles.css
+├── app.js
+├── mapEngine.js
+├── simulationEngine.js
+├── package.json
+├── vercel.json
+└── README.md
+```
+
+### Core Modules
+
+**`app.js`**
+
+Handles application state, UI events and user interactions.
+
+**`mapEngine.js`**
+
+Controls:
+
+* Map initialization
+* Markers
+* Routes
+* Traffic visualization
+* Hospital markers
+* Satellite/map layers
+
+**`simulationEngine.js`**
+
+Handles:
+
+* District coordinates
+* Route generation
+* GPS waypoints
+* Ambulance movement
+* Escort positioning
+* Traffic simulation
+* Arrival state
 
 ---
 
 ## 🚀 Getting Started
 
-### Local Development
+### Clone
+
 ```bash
-# Clone the repository
 git clone https://github.com/Kavin-124/ResQRoute.git
-
-# Navigate to project folder
 cd ResQRoute
+```
 
-# Install dependencies & start local server
+### Install dependencies
+
+```bash
 npm install
+```
+
+### Start the application
+
+```bash
 npm start
 ```
 
-Access the app in your browser at `http://localhost:8080`.
+The application runs on:
 
----
-
-## 📁 Repository Structure
-```
-ResQRoute/
-├── index.html            # Main Web Application Entry Point
-├── styles.css            # Dark Mode Design System & Glassmorphism Styles
-├── mapEngine.js          # Leaflet & Esri Satellite Map Controller
-├── simulationEngine.js   # 38-District GPS Telematics & Route Engine
-├── app.js                # Main UI Event Listeners & State Controller
-├── package.json          # Node Dependencies & Start Script
-├── vercel.json           # Vercel Deployment Configuration
-├── README.md             # Project Documentation
-└── .gitignore            # Git Ignored Files
+```text
+http://localhost:8080
 ```
 
 ---
 
-## 🌐 Deployment
-Hosted live on **Vercel** connected directly to the GitHub repository:  
-👉 **GitHub Repository:** [https://github.com/Kavin-124/ResQRoute](https://github.com/Kavin-124/ResQRoute)
+## 🎯 Project Goals
+
+ResQRoute demonstrates how web technologies can be used to visualize emergency transport scenarios through:
+
+* Interactive maps
+* GPS-style simulation
+* Route visualization
+* Traffic-state representation
+* Ambulance telemetry
+* Emergency convoy coordination
+
+---
+
+## 🔮 Future Improvements
+
+* Real GPS device integration
+* Real-time traffic API
+* Real road routing API
+* Live ambulance tracking
+* WebSocket-based telemetry
+* Emergency dispatch dashboard
+* Multiple ambulance support
+* Real hospital availability data
+* Route optimization using live traffic
+
+---
+
+## 👨‍💻 Author
+
+**Kavin R**
+
+* GitHub: [@Kavin-124](https://github.com/Kavin-124)
+* LinkedIn: [Kavin R](https://www.linkedin.com/in/kavinvsb)
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License.
