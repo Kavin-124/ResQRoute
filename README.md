@@ -213,12 +213,10 @@ http://localhost:8080
 ```
 
 ---
+## 🌐 Live Demo & Deployment
 
----
-
-🌐 Live Demo & Deployment
-Live Web Application: https://lifepulse-emergency.vercel.app/
-GitHub Repository: https://github.com/Kavin-124/lifepulse-emergency
+- 🚀 **Live Web Application:** [https://res-q-route-red.vercel.app/](https://res-q-route-red.vercel.app/)
+- 📂 **GitHub Repository:** [https://github.com/Kavin-124/ResQRoute](https://github.com/Kavin-124/ResQRoute)
 
 ---
 
